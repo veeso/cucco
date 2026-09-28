@@ -13,3 +13,24 @@ release args="":
 [confirm("Are you sure you want to clean the build artifacts?")]
 clean:
   cargo clean
+
+# Bump the package version and refresh Cargo.lock.
+[group('build')]
+bump_version version:
+  dist/release/bump_version.sh {{ version }}
+  cargo update --workspace
+
+# Run the bump_version.sh test suite.
+[group('build')]
+test_bump_version:
+  dist/release/test_bump_version.sh
+
+# Build a static musl Linux release binary in a pinned Alpine container.
+[group('build')]
+build_musl target:
+  dist/release/build_musl.sh {{ target }}
+
+# Build a release binary for a target triple.
+[group('build')]
+build_release target args="":
+  cargo build --locked --release --target {{ target }} {{ args }}
