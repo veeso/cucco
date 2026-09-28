@@ -1,19 +1,22 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
-title: ""
-labels: enhancement
-assignees: ""
+about: Suggest an idea to improve cucco
+title: "[Feature Request] - FEATURE_TITLE"
+labels: "new feature"
+assignees: veeso
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Description
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+Put here a brief introduction to your suggestion.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+### Changes
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+The following changes to the application are expected:
+
+- ...
+
+## Implementation
+
+Provide any kind of suggestion you propose on how to implement the feature.
+If you have none, delete this section.

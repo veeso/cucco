@@ -1,22 +1,31 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ""
+about: Create a report of the bug you've encountered
+title: "[BUG] - ISSUE_TITLE"
 labels: bug
-assignees: ""
+assignees: veeso
 ---
 
-**Describe the bug**
+## Description
+
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior.
+## Steps to reproduce
 
-**Expected behavior**
+Steps to reproduce the bug you encountered.
+
+## Expected behaviour
+
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## Environment
 
-**Additional context**
+- OS: [e.g. GNU/Linux Debian 12, macOS 26, Windows 11]
+- Architecture: [x86_64, aarch64, ...]
+- cucco version (`cucco --version`)
+- git version (`git --version`)
+- Install method: [install script, Homebrew, cargo, ...]
+
+## Additional information
+
 Add any other context about the problem here.
