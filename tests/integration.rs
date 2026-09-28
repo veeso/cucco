@@ -1,9 +1,9 @@
 use git2::{IndexAddOption, Repository};
 use indexmap::IndexMap;
 use inquire::autocompletion::Autocomplete;
-use koji::config::{CommitScope, Config};
-use koji::questions::ScopeAutocompleter;
-use koji::scope::detect_scope_matches;
+use cucco::config::{CommitScope, Config};
+use cucco::questions::ScopeAutocompleter;
+use cucco::scope::detect_scope_matches;
 #[cfg(not(target_os = "windows"))]
 use rexpect::{
     process::WaitStatus,
@@ -22,7 +22,7 @@ fn setup_config_home() -> Result<TempDir, Box<dyn Error>> {
 }
 
 fn setup_test_dir() -> Result<(PathBuf, TempDir, Repository), Box<dyn std::error::Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji").to_path_buf();
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco").to_path_buf();
     let temp_dir = tempfile::tempdir()?;
 
     let repo = Repository::init(temp_dir.path())?;
@@ -369,7 +369,7 @@ fn test_empty_breaking_text_correct() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_non_repository_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
     let temp_dir = tempfile::tempdir()?;
 
     let mut cmd = Command::new(bin_path);
@@ -405,7 +405,7 @@ fn test_empty_repository_error() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_all_hook_exclusive_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
     let mut cmd = Command::new(bin_path);
     cmd.arg("--hook");
@@ -422,7 +422,7 @@ fn test_all_hook_exclusive_error() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_all_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
     let mut cmd = Command::new(bin_path);
     cmd.arg("--stdout");
@@ -439,7 +439,7 @@ fn test_all_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_hook_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
     let mut cmd = Command::new(bin_path);
     cmd.arg("--stdout");
@@ -457,7 +457,7 @@ fn test_hook_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_completion_scripts_success() -> Result<(), Box<dyn Error>> {
     fn run_for(shell: &'static str, containing: &'static str) -> Result<(), Box<dyn Error>> {
-        let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+        let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
         let mut cmd = Command::new(bin_path);
         cmd.arg("completions").arg(shell);
@@ -471,14 +471,14 @@ fn test_completion_scripts_success() -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 
-    run_for("nushell", "def \"nu-complete koji")?;
-    run_for("fish", "complete -c koji -n \"__fish_koji_needs_command")?;
-    run_for("bash", "complete -F _koji -o bashdefault -o default koji")?;
+    run_for("nushell", "def \"nu-complete cucco")?;
+    run_for("fish", "complete -c cucco -n \"__fish_cucco_needs_command")?;
+    run_for("bash", "complete -F _cucco -o bashdefault -o default cucco")?;
     run_for(
         "powershell",
-        "Register-ArgumentCompleter -Native -CommandName 'koji'",
+        "Register-ArgumentCompleter -Native -CommandName 'cucco'",
     )?;
-    run_for("zsh", "#compdef koji")
+    run_for("zsh", "#compdef cucco")
 }
 
 #[test]
@@ -488,9 +488,9 @@ fn test_xdg_config() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     let xdg_cfg_home = tempfile::tempdir()?;
-    fs::create_dir(xdg_cfg_home.path().join("koji"))?;
+    fs::create_dir(xdg_cfg_home.path().join("cucco"))?;
     fs::write(
-        xdg_cfg_home.path().join("koji/config.toml"),
+        xdg_cfg_home.path().join("cucco/config.toml"),
         "[[commit_types]]\nname=\"wip\"\ndescription = \"Do not create PR with this commit\"",
     )?;
 
@@ -854,7 +854,7 @@ fn test_force_config_scopes_integration() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "force_config_scopes = true\n[[commit_scopes]]\nname = \"app\"",
     )?;
 
@@ -905,7 +905,7 @@ fn test_require_scope_integration() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "allow_empty_scope = false",
     )?;
 
@@ -964,7 +964,7 @@ fn test_scope_pattern_auto_assigns_scope() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "[[commit_scopes]]\nname = \"config\"\npatterns = \"/config\\\\.json$\"",
     )?;
     fs::write(temp_dir.path().join("config.json"), "abc")?;
@@ -1018,7 +1018,7 @@ fn test_force_config_scopes_prints_pre_assigned_scope() -> Result<(), Box<dyn Er
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "force_config_scopes = true\n[[commit_scopes]]\nname = \"config\"\npatterns = \"/config\\\\.json$\"",
     )?;
     fs::write(temp_dir.path().join("config.json"), "abc")?;
@@ -1077,11 +1077,11 @@ fn test_detect_scope_matches_from_scope_patterns() -> Result<(), Box<dyn Error>>
     fs::write(temp_dir.path().join("config.json"), "abc")?;
     git_add(&repo, ".")?;
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "[[commit_scopes]]\nname = \"config\"\npatterns = \"/config\\\\.json$\"",
     )?;
 
-    let config = Config::new(Some(koji::config::ConfigArgs {
+    let config = Config::new(Some(cucco::config::ConfigArgs {
         _current_dir: Some(temp_dir.path().to_path_buf()),
         ..Default::default()
     }))?;

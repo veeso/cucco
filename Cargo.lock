@@ -741,6 +741,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "cucco"
+version = "3.4.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "ast-grep-config",
+ "ast-grep-language",
+ "clap",
+ "clap_complete_command",
+ "cocogitto",
+ "config 0.15.25",
+ "conventional_commit_parser",
+ "dirs",
+ "emojis",
+ "git2 0.21.0",
+ "gix",
+ "indexmap",
+ "inquire",
+ "predicates",
+ "regex",
+ "rexpect",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.19",
+ "xdg",
+]
+
+[[package]]
 name = "dashmap"
 version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2431,34 +2459,6 @@ dependencies = [
  "pest",
  "pest_derive",
  "serde",
-]
-
-[[package]]
-name = "koji"
-version = "3.4.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "ast-grep-config",
- "ast-grep-language",
- "clap",
- "clap_complete_command",
- "cocogitto",
- "config 0.15.25",
- "conventional_commit_parser",
- "dirs",
- "emojis",
- "git2 0.21.0",
- "gix",
- "indexmap",
- "inquire",
- "predicates",
- "regex",
- "rexpect",
- "serde",
- "tempfile",
- "thiserror 2.0.19",
- "xdg",
 ]
 
 [[package]]

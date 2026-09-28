@@ -140,12 +140,12 @@ impl Config {
         settings = config_dirs
             .into_iter()
             .flatten()
-            .map(|d| d.join("koji/config.toml"))
+            .map(|d| d.join("cucco/config.toml"))
             .map(|d| config::File::from(d).required(false))
             .fold(settings, |prev, cfg| prev.add_source(cfg));
 
         // Try to get config from working directory
-        let working_dir_path = workdir.join(".koji.toml");
+        let working_dir_path = workdir.join(".cucco.toml");
         settings = settings.add_source(config::File::from(working_dir_path).required(false));
 
         // Try to get config from passed directory
@@ -197,12 +197,12 @@ mod tests {
     fn test_from_path() -> Result<(), Box<dyn Error>> {
         let tempdir = tempfile::tempdir()?;
         std::fs::write(
-            tempdir.path().join("my-koji.toml"),
+            tempdir.path().join("my-cucco.toml"),
             "[[commit_types]]\nname=\"1234\"\ndescription=\"test\"",
         )?;
 
         let config = Config::new(Some(ConfigArgs {
-            path: Some(tempdir.path().join("my-koji.toml")),
+            path: Some(tempdir.path().join("my-cucco.toml")),
             ..ConfigArgs::default()
         }));
 
@@ -218,7 +218,7 @@ mod tests {
     fn test_local_config() -> Result<(), Box<dyn Error>> {
         let tempdir = tempfile::tempdir()?;
         std::fs::write(
-            tempdir.path().join(".koji.toml"),
+            tempdir.path().join(".cucco.toml"),
             "[[commit_types]]\nname=\"123\"\ndescription=\"test\"",
         )?;
 
@@ -239,9 +239,9 @@ mod tests {
     fn test_user_config_config() -> Result<(), Box<dyn Error>> {
         let tempdir_current = tempfile::tempdir()?;
         let tempdir_config = tempfile::tempdir()?;
-        std::fs::create_dir(tempdir_config.path().join("koji"))?;
+        std::fs::create_dir(tempdir_config.path().join("cucco"))?;
         std::fs::write(
-            tempdir_config.path().join("koji").join("config.toml"),
+            tempdir_config.path().join("cucco").join("config.toml"),
             "[[commit_types]]\nname=\"12345\"\ndescription=\"test\"",
         )?;
 
@@ -263,13 +263,13 @@ mod tests {
     #[test]
     fn test_all_config_sources() -> Result<(), Box<dyn Error>> {
         let tempdir_config = tempfile::tempdir()?;
-        std::fs::create_dir(tempdir_config.path().join("koji"))?;
+        std::fs::create_dir(tempdir_config.path().join("cucco"))?;
         std::fs::write(
-            tempdir_config.path().join("koji").join("config.toml"),
+            tempdir_config.path().join("cucco").join("config.toml"),
             "[[commit_types]]\nname=\"12345\"\ndescription=\"test\"",
         )?;
         let tempdir_current = tempfile::tempdir()?;
-        std::fs::write(tempdir_current.path().join(".koji.toml"), "emoji=\"true\"")?;
+        std::fs::write(tempdir_current.path().join(".cucco.toml"), "emoji=\"true\"")?;
         let tempdir_path = tempfile::tempdir()?;
         std::fs::write(tempdir_path.path().join("custom.toml"), "autocomplete=true")?;
 
@@ -365,7 +365,7 @@ mod tests {
     fn test_commit_scopes() -> Result<(), Box<dyn Error>> {
         let tempdir = tempfile::tempdir()?;
         std::fs::write(
-            tempdir.path().join(".koji.toml"),
+            tempdir.path().join(".cucco.toml"),
             "[[commit_scopes]]\nname=\"app\"\ndescription=\"Application code\"",
         )?;
         let config = Config::new(Some(ConfigArgs {
@@ -383,9 +383,9 @@ mod tests {
     #[test]
     fn test_commit_scopes_from_config() -> Result<(), Box<dyn Error>> {
         let tempdir_config = tempfile::tempdir()?;
-        std::fs::create_dir(tempdir_config.path().join("koji"))?;
+        std::fs::create_dir(tempdir_config.path().join("cucco"))?;
         std::fs::write(
-            tempdir_config.path().join("koji").join("config.toml"),
+            tempdir_config.path().join("cucco").join("config.toml"),
             "[[commit_scopes]]\nname=\"server\"\ndescription=\"Server code\"\n[[commit_scopes]]\nname=\"shared\"",
         )?;
         let tempdir_current = tempfile::tempdir()?;
@@ -406,7 +406,7 @@ mod tests {
     fn test_scope_patterns_inline() -> Result<(), Box<dyn Error>> {
         let tempdir = tempfile::tempdir()?;
         std::fs::write(
-            tempdir.path().join(".koji.toml"),
+            tempdir.path().join(".cucco.toml"),
             "[[commit_scopes]]\nname=\"core\"\ndescription=\"Core crate\"\npatterns = \"/crates/core/**/*.rs\"\n[[commit_scopes]]\nname=\"build\"\npatterns = [\"^/build\\\\.rs$\", \"/justfile\"]",
         )?;
 
@@ -435,7 +435,7 @@ mod tests {
         let tempdir = tempfile::tempdir()?;
         // Use a subtable for ast_grep within the commit_scopes array entry
         std::fs::write(
-            tempdir.path().join(".koji.toml"),
+            tempdir.path().join(".cucco.toml"),
             "[[commit_scopes]]\nname = \"test\"\ndescription = \"Test functions\"\n\n[commit_scopes.ast_grep]\nlanguage = \"Rust\"\nrule = { kind = \"function_item\" }\nfiles = [\"**/*.rs\"]\n",
         )?;
 

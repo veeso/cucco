@@ -47,11 +47,11 @@ pub fn write_commit_msg(
 
 /// Create a commit
 ///
-/// Staging is always performed by koji (never delegated to cocogitto) so that
+/// Staging is always performed by cucco (never delegated to cocogitto) so that
 /// the same set of files is staged regardless of whether `no_verify` is set.
 /// When staging is requested (`add_files` or `update_files`) every unstaged
 /// change is staged: tracked modifications, deletions, and untracked files
-/// (matching `git add -A`), aligning with koji's documented `--all` flag.
+/// (matching `git add -A`), aligning with cucco's documented `--all` flag.
 ///
 /// When `no_verify` is `false`, the `pre-commit` and `post-commit` git hooks
 /// are invoked around the commit. `post-commit` failures are reported as a
@@ -90,7 +90,7 @@ pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool)
 /// Stage every unstaged change via gix, equivalent to `git add -A`.
 ///
 /// This covers tracked modifications and deletions plus untracked files (but
-/// not ignored files), matching the documented behavior of koji's `--all`.
+/// not ignored files), matching the documented behavior of cucco's `--all`.
 fn stage_all(repo: &Repository) -> Result<()> {
     use gix::status::index_worktree::Item;
     use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};

@@ -5,16 +5,16 @@ use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use cocogitto::command::commit::CommitOptions;
 use conventional_commit_parser::parse;
-use koji::answers::{get_extracted_answers, ExtractedAnswers};
-use koji::commit::{commit, generate_commit_msg, write_commit_msg};
-use koji::config::{Config, ConfigArgs};
-use koji::questions::{create_prompt, prompt_confirm};
-use koji::scope::{detect_scope_matches, stage_tracked_changes};
-use koji::status::{check_staging, StagingStatus};
+use cucco::answers::{get_extracted_answers, ExtractedAnswers};
+use cucco::commit::{commit, generate_commit_msg, write_commit_msg};
+use cucco::config::{Config, ConfigArgs};
+use cucco::questions::{create_prompt, prompt_confirm};
+use cucco::scope::{detect_scope_matches, stage_tracked_changes};
+use cucco::status::{check_staging, StagingStatus};
 
 #[derive(Parser, Debug)]
 #[command(
-    about = "🦊 An interactive CLI for creating conventional commits.",
+    about = "🐔 An interactive CLI for creating conventional commits.",
     version
 )]
 struct Args {
@@ -120,7 +120,7 @@ struct Args {
     #[arg(
         short = 'C',
         value_name = "PATH",
-        help = "Run as if koji was started in <path>"
+        help = "Run as if cucco was started in <path>"
     )]
     current_workdir: Option<PathBuf>,
 }
