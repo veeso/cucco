@@ -1,7 +1,9 @@
 use anyhow::Result;
 use indexmap::IndexMap;
 
-use crate::{config::CommitType, emoji::ReplaceEmoji, questions::Answers};
+use crate::config::CommitType;
+use crate::emoji::ReplaceEmoji;
+use crate::questions::Answers;
 
 /// Get the summary, prepending a relevant emoji if enabled
 fn get_summary(
@@ -95,10 +97,9 @@ mod tests {
     use std::result::Result;
 
     use cocogitto::CocoGitto;
+    use indexmap::indexmap;
 
     use super::*;
-
-    use indexmap::indexmap;
 
     #[test]
     fn test_get_summary() -> Result<(), Box<dyn Error>> {

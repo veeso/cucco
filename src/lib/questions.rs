@@ -1,17 +1,16 @@
-use crate::config::{CommitType, Config};
-use crate::scope::ScopeMatches;
 use anyhow::{Context, Result};
 use conventional_commit_parser::parse_summary;
 use gix::bstr::ByteSlice;
 use indexmap::IndexMap;
+use inquire::autocompletion::{Autocomplete, Replacement};
 use inquire::error::InquireError;
 use inquire::ui::{Attributes, Color, RenderConfig, StyleSheet};
-use inquire::{
-    autocompletion::{Autocomplete, Replacement},
-    validator::Validation,
-    Confirm, CustomUserError, Select, Text,
-};
+use inquire::validator::Validation;
+use inquire::{Confirm, CustomUserError, Select, Text};
 use thiserror::Error;
+
+use crate::config::{CommitType, Config};
+use crate::scope::ScopeMatches;
 
 #[derive(Debug, Error)]
 enum PromptError {
@@ -138,7 +137,9 @@ impl ScopeAutocompleter {
 
             let commit = repo.find_commit(info.id)?;
 
-            let message = commit.message()?;
+            let message = commit
+                .message()
+                .map_err(|error| anyhow::Error::from(error.into_error()))?;
 
             let summary = message.summary();
 
@@ -192,7 +193,6 @@ impl Autocomplete for ScopeAutocompleter {
             .collect())
     }
 
-    #[cfg(not(tarpaulin_include))]
     fn get_completion(
         &mut self,
         _input: &str,
@@ -470,8 +470,6 @@ pub fn prompt_confirm() -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::Config;
-
     use super::*;
 
     #[test]
@@ -533,16 +531,20 @@ mod tests {
         let validated = validate_summary("needed more badges :badger:");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Summary should be OK")
-            .eq(&Validation::Valid));
+        assert!(
+            validated
+                .expect("Summary should be OK")
+                .eq(&Validation::Valid)
+        );
 
         let validated = validate_summary("");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Summary should be OK")
-            .eq(&Validation::Invalid("A summary is required".into())));
+        assert!(
+            validated
+                .expect("Summary should be OK")
+                .eq(&Validation::Invalid("A summary is required".into()))
+        );
     }
 
     #[test]
@@ -550,17 +552,21 @@ mod tests {
         let validated = validate_issue_reference("closes #123");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Issue reference should be OK")
-            .eq(&Validation::Valid));
+        assert!(
+            validated
+                .expect("Issue reference should be OK")
+                .eq(&Validation::Valid)
+        );
 
         let validated = validate_issue_reference("");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Summary should be OK")
-            .eq(&Validation::Invalid(
-                "An issue reference is required".into()
-            )));
+        assert!(
+            validated
+                .expect("Summary should be OK")
+                .eq(&Validation::Invalid(
+                    "An issue reference is required".into()
+                ))
+        );
     }
 }

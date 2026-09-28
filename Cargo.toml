@@ -1,59 +1,82 @@
 [package]
-name = "koji"
+name = "cucco"
 version = "3.4.0"
-edition = "2021"
 authors = [
+  "Christian Visintin <christian.visintin@veeso.dev>",
   "Finley Thomalla <finley@thomalla.ch>",
   "Danny Tatom <its.danny@hey.com>",
 ]
-description = "An interactive CLI for creating conventional commits."
-documentation = "https://docs.rs/koji"
-repository = "https://github.com/cococonscious/koji"
+categories = ["command-line-utilities", "development-tools"]
+documentation = "https://docs.rs/cucco"
+edition = "2021"
+homepage = "https://github.com/veeso/cucco"
+include = [
+  "/CHANGELOG.md",
+  "/Cargo.lock",
+  "/Cargo.toml",
+  "/LICENSE",
+  "/README.md",
+  "/meta/config/default.toml",
+  "/src/**",
+]
+keywords = ["cli", "commit", "conventional-commits", "git", "hooks"]
 license = "MIT"
-
-[[bin]]
-name = "koji"
-path = "src/bin/main.rs"
-
-[lib]
-name = "koji"
-path = "src/lib/lib.rs"
+readme = "README.md"
+repository = "https://github.com/veeso/cucco"
+rust-version = "1.98.1"
+description = "An interactive CLI for creating conventional commits, with git hooks support."
 
 [features]
-default = ["ast-grep"]
 ast-grep = ["dep:ast-grep-config", "dep:ast-grep-language"]
+default = ["ast-grep"]
 
 [dependencies]
-anyhow = "1.0"
-clap = { version = "4.5", features = ["derive"] }
-cocogitto = { version = "7.0", default-features = false }
-conventional_commit_parser = "0.9.4"
-dirs = "6.0"
-emojis = "0.9.0"
-indexmap = "2.10"
-serde = { version = "1.0", features = ["derive"] }
-inquire = "0.9.4"
-regex = "1.12"
-thiserror = "2.0"
-clap_complete_command = { version = "0.6.1", features = ["nushell"]}
-config = { version = "0.15.25", features = ["toml"] }
-xdg = "3.0"
-gix = "0.86.0"
-ast-grep-config = { version = "0.45.0", optional = true }
-ast-grep-language = { version = "0.45.0", optional = true }
+anyhow = "1"
+ast-grep-config = { version = "0.45", optional = true }
+ast-grep-language = { version = "0.45", optional = true }
+clap = { version = "4", features = ["derive"] }
+clap_complete_command = { version = "0.6", features = ["nushell"] }
+cocogitto = { version = "7", default-features = false }
+config = { version = "0.15", features = ["toml"] }
+conventional_commit_parser = "0.9"
+dirs = "6"
+emojis = "0.9"
+gix = "0.88"
+indexmap = "2"
+inquire = "0.9"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+xdg = "3"
 
 [dev-dependencies]
-git2 = "0.21.0"
-assert_cmd = "2.0.16"
-predicates = "3.1.2"
-tempfile = "3.12.0"
+assert_cmd = "2"
+git2 = "0.21"
+predicates = "3"
+tempfile = "3"
 
 [target.'cfg(not(windows))'.dev-dependencies]
-rexpect = "0.7.1"
+rexpect = "0.7"
+
+[lib]
+name = "cucco"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "cucco"
+path = "src/bin/main.rs"
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
+ambiguous_negative_literals = "warn"
+missing_debug_implementations = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_lifetimes = "warn"
 
 [profile.release]
-opt-level = "z"
 codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

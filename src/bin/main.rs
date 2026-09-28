@@ -5,16 +5,16 @@ use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use cocogitto::command::commit::CommitOptions;
 use conventional_commit_parser::parse;
-use koji::answers::{get_extracted_answers, ExtractedAnswers};
-use koji::commit::{commit, generate_commit_msg, write_commit_msg};
-use koji::config::{Config, ConfigArgs};
-use koji::questions::{create_prompt, prompt_confirm};
-use koji::scope::{detect_scope_matches, stage_tracked_changes};
-use koji::status::{check_staging, StagingStatus};
+use cucco::answers::{ExtractedAnswers, get_extracted_answers};
+use cucco::commit::{commit, generate_commit_msg, write_commit_msg};
+use cucco::config::{Config, ConfigArgs};
+use cucco::questions::{create_prompt, prompt_confirm};
+use cucco::scope::{detect_scope_matches, stage_tracked_changes};
+use cucco::status::{StagingStatus, check_staging};
 
 #[derive(Parser, Debug)]
 #[command(
-    about = "🦊 An interactive CLI for creating conventional commits.",
+    about = "🐔 An interactive CLI for creating conventional commits.",
     version
 )]
 struct Args {
@@ -96,8 +96,19 @@ struct Args {
     )]
     sign: Option<bool>,
 
-    #[arg(short, long, help = "Stage all tracked modified or deleted files")]
+    #[arg(
+        short,
+        long,
+        help = "Stage all changes (modified, deleted, and untracked files)"
+    )]
     all: bool,
+
+    #[arg(
+        long,
+        help = "Bypass the pre-commit and post-commit git hooks",
+        conflicts_with = "hook"
+    )]
+    no_verify: bool,
 
     #[arg(
         short = 'y',
@@ -109,7 +120,7 @@ struct Args {
     #[arg(
         short = 'C',
         value_name = "PATH",
-        help = "Run as if koji was started in <path>"
+        help = "Run as if cucco was started in <path>"
     )]
     current_workdir: Option<PathBuf>,
 }
@@ -120,7 +131,6 @@ enum SubCmds {
     Completions { shell: clap_complete_command::Shell },
 }
 
-#[cfg(not(tarpaulin_include))]
 fn main() -> Result<()> {
     // Get CLI args
 
@@ -135,6 +145,7 @@ fn main() -> Result<()> {
         issues,
         sign,
         all,
+        no_verify,
         yes,
         current_workdir,
     } = Args::parse();
@@ -168,7 +179,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // --hook and --stdout don't create commits; --all stages tracked files automatically
+    // --hook and --stdout don't create commits; --all stages everything (incl. untracked)
     if !hook && !stdout && !all {
         match check_staging(&repo)? {
             StagingStatus::Empty => {
@@ -199,7 +210,7 @@ fn main() -> Result<()> {
 
     // When --all is set, stage tracked changes before anything else, so scope detection sees the ENTIRE diff.
     // Afterwards, the commit step will re-stage idempotently.
-    if all {
+    if all && repo.index_path().exists() {
         stage_tracked_changes(&repo).context("failed to pre-stage tracked files")?;
     }
 
@@ -260,7 +271,7 @@ fn main() -> Result<()> {
             update_files: false,
         };
 
-        commit(current_dir, options)?;
+        commit(current_dir, options, no_verify)?;
     }
 
     Ok(())

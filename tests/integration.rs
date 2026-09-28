@@ -1,16 +1,19 @@
+use std::error::Error;
+use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
+
+use cucco::config::{CommitScope, Config};
+use cucco::questions::ScopeAutocompleter;
+use cucco::scope::detect_scope_matches;
 use git2::{IndexAddOption, Repository};
 use indexmap::IndexMap;
 use inquire::autocompletion::Autocomplete;
-use koji::config::{CommitScope, Config};
-use koji::questions::ScopeAutocompleter;
-use koji::scope::detect_scope_matches;
 #[cfg(not(target_os = "windows"))]
 use rexpect::{
     process::WaitStatus,
-    session::{spawn_command, PtySession},
+    session::{PtySession, spawn_command},
 };
-use std::fs;
-use std::{error::Error, path::PathBuf, process::Command};
 use tempfile::TempDir;
 
 #[cfg(not(target_os = "windows"))]
@@ -22,7 +25,7 @@ fn setup_config_home() -> Result<TempDir, Box<dyn Error>> {
 }
 
 fn setup_test_dir() -> Result<(PathBuf, TempDir, Repository), Box<dyn std::error::Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji").to_path_buf();
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco").to_path_buf();
     let temp_dir = tempfile::tempdir()?;
 
     let repo = Repository::init(temp_dir.path())?;
@@ -30,6 +33,7 @@ fn setup_test_dir() -> Result<(PathBuf, TempDir, Repository), Box<dyn std::error
     let mut config = repo.config()?;
     config.set_str("user.name", "test")?;
     config.set_str("user.email", "test@example.org")?;
+    config.set_str("core.hooksPath", ".git/hooks")?;
 
     Ok((bin_path, temp_dir, repo))
 }
@@ -176,7 +180,9 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(
         commit.body(),
-        Ok(Some("Removed and added a config pair each\nNecessary for future compatibility.\n\ncloses #1\nBREAKING CHANGE: Something can't be configured anymore"))
+        Ok(Some(
+            "Removed and added a config pair each\nNecessary for future compatibility.\n\ncloses #1\nBREAKING CHANGE: Something can't be configured anymore"
+        ))
     );
 
     temp_dir.close()?;
@@ -368,7 +374,7 @@ fn test_empty_breaking_text_correct() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_non_repository_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
     let temp_dir = tempfile::tempdir()?;
 
     let mut cmd = Command::new(bin_path);
@@ -404,7 +410,7 @@ fn test_empty_repository_error() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_all_hook_exclusive_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
     let mut cmd = Command::new(bin_path);
     cmd.arg("--hook");
@@ -421,7 +427,7 @@ fn test_all_hook_exclusive_error() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_all_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
     let mut cmd = Command::new(bin_path);
     cmd.arg("--stdout");
@@ -438,7 +444,7 @@ fn test_all_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_hook_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
-    let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
     let mut cmd = Command::new(bin_path);
     cmd.arg("--stdout");
@@ -456,7 +462,7 @@ fn test_hook_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_completion_scripts_success() -> Result<(), Box<dyn Error>> {
     fn run_for(shell: &'static str, containing: &'static str) -> Result<(), Box<dyn Error>> {
-        let bin_path = assert_cmd::cargo::cargo_bin!("koji");
+        let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
         let mut cmd = Command::new(bin_path);
         cmd.arg("completions").arg(shell);
@@ -470,14 +476,14 @@ fn test_completion_scripts_success() -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 
-    run_for("nushell", "def \"nu-complete koji")?;
-    run_for("fish", "complete -c koji -n \"__fish_koji_needs_command")?;
-    run_for("bash", "complete -F _koji -o bashdefault -o default koji")?;
+    run_for("nushell", "def \"nu-complete cucco")?;
+    run_for("fish", "complete -c cucco -n \"__fish_cucco_needs_command")?;
+    run_for("bash", "complete -F _cucco -o bashdefault -o default cucco")?;
     run_for(
         "powershell",
-        "Register-ArgumentCompleter -Native -CommandName 'koji'",
+        "Register-ArgumentCompleter -Native -CommandName 'cucco'",
     )?;
-    run_for("zsh", "#compdef koji")
+    run_for("zsh", "#compdef cucco")
 }
 
 #[test]
@@ -487,9 +493,9 @@ fn test_xdg_config() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     let xdg_cfg_home = tempfile::tempdir()?;
-    fs::create_dir(xdg_cfg_home.path().join("koji"))?;
+    fs::create_dir(xdg_cfg_home.path().join("cucco"))?;
     fs::write(
-        xdg_cfg_home.path().join("koji/config.toml"),
+        xdg_cfg_home.path().join("cucco/config.toml"),
         "[[commit_types]]\nname=\"wip\"\ndescription = \"Do not create PR with this commit\"",
     )?;
 
@@ -552,9 +558,7 @@ fn test_no_staged_files_error() -> Result<(), Box<dyn Error>> {
     let (bin_path, temp_dir, repo) = setup_test_dir()?;
 
     fs::write(temp_dir.path().join("README.md"), "hello")?;
-    let mut index = repo.index()?;
-    index.add_all(["."].iter(), IndexAddOption::default(), None)?;
-    index.write()?;
+    git_add(&repo, ".")?;
     do_initial_commit(&repo, "docs: initial")?;
 
     // Modify a file but don't stage it
@@ -584,9 +588,7 @@ fn test_confirmation_accept() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(temp_dir.path().join("README.md"), "foo")?;
-    repo.index()?
-        .add_all(["."].iter(), IndexAddOption::default(), None)?;
-    repo.index()?.write()?;
+    git_add(&repo, ".")?;
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
@@ -645,16 +647,14 @@ fn test_partial_staging_warning() -> Result<(), Box<dyn Error>> {
 
     fs::write(temp_dir.path().join("a.txt"), "aaa")?;
     fs::write(temp_dir.path().join("b.txt"), "bbb")?;
-    let mut index = repo.index()?;
-    index.add_all(["."].iter(), IndexAddOption::default(), None)?;
-    index.write()?;
+    git_add(&repo, ".")?;
     do_initial_commit(&repo, "chore: initial")?;
 
     // Modify both, stage only one
     fs::write(temp_dir.path().join("a.txt"), "aaa changed")?;
     fs::write(temp_dir.path().join("b.txt"), "bbb changed")?;
     let mut index = repo.index()?;
-    index.add_all(["a.txt"].iter(), IndexAddOption::default(), None)?;
+    index.add_all(["a.txt"].iter(), IndexAddOption::DEFAULT, None)?;
     index.write()?;
 
     let mut cmd = Command::new(&bin_path);
@@ -684,9 +684,7 @@ fn test_all_flag_skips_staging_check() -> Result<(), Box<dyn Error>> {
     let (bin_path, temp_dir, repo) = setup_test_dir()?;
 
     fs::write(temp_dir.path().join("README.md"), "hello")?;
-    let mut index = repo.index()?;
-    index.add_all(["."].iter(), IndexAddOption::default(), None)?;
-    index.write()?;
+    git_add(&repo, ".")?;
     do_initial_commit(&repo, "docs: initial")?;
 
     // Modify a file but don't stage it
@@ -711,13 +709,11 @@ fn test_confirmation_decline() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(temp_dir.path().join("README.md"), "foo")?;
-    repo.index()?
-        .add_all(["."].iter(), IndexAddOption::default(), None)?;
+    git_add(&repo, ".")?;
     do_initial_commit(&repo, "docs(readme): initial draft")?;
 
     fs::write(temp_dir.path().join("config.json"), "bar")?;
-    repo.index()?
-        .add_all(["."].iter(), IndexAddOption::default(), None)?;
+    git_add(&repo, ".")?;
     repo.index()?.write()?;
 
     let mut cmd = Command::new(bin_path);
@@ -863,7 +859,7 @@ fn test_force_config_scopes_integration() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "force_config_scopes = true\n[[commit_scopes]]\nname = \"app\"",
     )?;
 
@@ -914,7 +910,7 @@ fn test_require_scope_integration() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "allow_empty_scope = false",
     )?;
 
@@ -973,7 +969,7 @@ fn test_scope_pattern_auto_assigns_scope() -> Result<(), Box<dyn Error>> {
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "[[commit_scopes]]\nname = \"config\"\npatterns = \"/config\\\\.json$\"",
     )?;
     fs::write(temp_dir.path().join("config.json"), "abc")?;
@@ -1027,7 +1023,7 @@ fn test_force_config_scopes_prints_pre_assigned_scope() -> Result<(), Box<dyn Er
     let config_temp_dir = setup_config_home()?;
 
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "force_config_scopes = true\n[[commit_scopes]]\nname = \"config\"\npatterns = \"/config\\\\.json$\"",
     )?;
     fs::write(temp_dir.path().join("config.json"), "abc")?;
@@ -1086,11 +1082,11 @@ fn test_detect_scope_matches_from_scope_patterns() -> Result<(), Box<dyn Error>>
     fs::write(temp_dir.path().join("config.json"), "abc")?;
     git_add(&repo, ".")?;
     fs::write(
-        temp_dir.path().join(".koji.toml"),
+        temp_dir.path().join(".cucco.toml"),
         "[[commit_scopes]]\nname = \"config\"\npatterns = \"/config\\\\.json$\"",
     )?;
 
-    let config = Config::new(Some(koji::config::ConfigArgs {
+    let config = Config::new(Some(cucco::config::ConfigArgs {
         _current_dir: Some(temp_dir.path().to_path_buf()),
         ..Default::default()
     }))?;
@@ -1099,5 +1095,383 @@ fn test_detect_scope_matches_from_scope_patterns() -> Result<(), Box<dyn Error>>
     assert_eq!(matches.suggested(), Some("config"));
 
     temp_dir.close()?;
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn install_hook(temp_dir: &TempDir, name: &str, body: &str) -> Result<(), Box<dyn Error>> {
+    use std::os::unix::fs::PermissionsExt;
+    let hooks = temp_dir.path().join(".git").join("hooks");
+    fs::create_dir_all(&hooks)?;
+    let path = hooks.join(name);
+    fs::write(&path, body)?;
+    let mut perms = fs::metadata(&path)?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&path, perms)?;
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn drive_simple_fix_commit(process: &mut PtySession, summary: &str) -> Result<(), Box<dyn Error>> {
+    process.expect_commit_type()?;
+    process.send_line("fix")?;
+    process.flush()?;
+    process.expect_scope()?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_summary()?;
+    process.send_line(summary)?;
+    process.flush()?;
+    process.expect_body()?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_breaking()?;
+    process.send_line("N")?;
+    process.flush()?;
+    process.expect_issues()?;
+    process.send_line("N")?;
+    process.flush()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_pre_commit_hook_runs() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "x")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    let sentinel = temp_dir.path().join("hook-fired");
+    let hook_body = format!("#!/bin/sh\ntouch {}\n", sentinel.display());
+    install_hook(&temp_dir, "pre-commit", &hook_body)?;
+
+    fs::write(temp_dir.path().join("a.txt"), "x")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "hooked")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    assert!(sentinel.exists(), "pre-commit hook did not run");
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: hooked")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_pre_commit_hook_failure_aborts() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "x")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    install_hook(&temp_dir, "pre-commit", "#!/bin/sh\nexit 1\n")?;
+
+    fs::write(temp_dir.path().join("a.txt"), "x")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "should fail")?;
+    let _ = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    assert!(
+        !success,
+        "expected non-zero exit when pre-commit hook fails"
+    );
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("docs: initial")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_no_verify_skips_pre_commit_hook() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "x")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    install_hook(&temp_dir, "pre-commit", "#!/bin/sh\nexit 1\n")?;
+
+    fs::write(temp_dir.path().join("a.txt"), "x")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("--no-verify")
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "bypass")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("--no-verify path failed: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: bypass")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_post_commit_hook_runs() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "x")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    let sentinel = temp_dir.path().join("post-commit-fired");
+    let hook_body = format!("#!/bin/sh\ntouch {}\n", sentinel.display());
+    install_hook(&temp_dir, "post-commit", &hook_body)?;
+
+    fs::write(temp_dir.path().join("a.txt"), "x")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "post hooked")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    assert!(sentinel.exists(), "post-commit hook did not run");
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: post hooked")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_post_commit_hook_failure_does_not_abort() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "x")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    install_hook(&temp_dir, "post-commit", "#!/bin/sh\nexit 1\n")?;
+
+    fs::write(temp_dir.path().join("a.txt"), "x")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "post fail tolerated")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("post-commit failure must not abort the commit: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: post fail tolerated")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_all_stages_modified_and_untracked() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("tracked.txt"), "v1")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    fs::write(temp_dir.path().join("tracked.txt"), "v2")?;
+    fs::write(temp_dir.path().join("untracked.txt"), "u")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("--all")
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "stage modified and untracked")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    let tree = commit.tree()?;
+    assert!(
+        tree.get_name("tracked.txt").is_some(),
+        "tracked.txt missing"
+    );
+    let untracked_entry = tree
+        .get_name("untracked.txt")
+        .expect("untracked.txt should be staged by --all");
+    let blob = repo.find_blob(untracked_entry.id())?;
+    assert_eq!(blob.content(), b"u");
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_all_stages_in_fresh_repo_without_initial_commit() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("untracked.txt"), "u")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("--all")
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "stage in fresh repo")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    let tree = commit.tree()?;
+    let untracked_entry = tree
+        .get_name("untracked.txt")
+        .expect("untracked.txt should be staged by --all");
+    let blob = repo.find_blob(untracked_entry.id())?;
+    assert_eq!(blob.content(), b"u");
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_no_verify_skips_post_commit_hook() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "x")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    let sentinel = temp_dir.path().join("post-commit-fired");
+    let hook_body = format!("#!/bin/sh\ntouch {}\n", sentinel.display());
+    install_hook(&temp_dir, "post-commit", &hook_body)?;
+
+    fs::write(temp_dir.path().join("a.txt"), "x")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("--no-verify")
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "no post hook")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    assert!(
+        !sentinel.exists(),
+        "post-commit hook ran despite --no-verify"
+    );
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: no post hook")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
     Ok(())
 }
