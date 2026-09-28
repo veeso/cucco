@@ -41,7 +41,7 @@ config = { version = "0.15", features = ["toml"] }
 conventional_commit_parser = "0.9"
 dirs = "6"
 emojis = "0.9"
-gix = "0.86"
+gix = "0.88"
 indexmap = "2"
 inquire = "0.9"
 regex = "1"
@@ -67,8 +67,16 @@ name = "cucco"
 path = "src/bin/main.rs"
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
+ambiguous_negative_literals = "warn"
+missing_debug_implementations = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_lifetimes = "warn"
 
 [profile.release]
-opt-level = "z"
 codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

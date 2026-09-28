@@ -149,6 +149,7 @@ pub fn stage_tracked_changes(repo: &Repository) -> Result<()> {
     index.remove_entries(|_, _, e| e.flags.contains(gix::index::entry::Flags::REMOVE));
     index
         .write(gix::index::write::Options::default())
+        .map_err(|error| anyhow::Error::from(error.into_error()))
         .context("could not write index")?;
 
     Ok(())
@@ -220,7 +221,7 @@ fn staged_changes(repo: &Repository) -> Result<Vec<StagedChange>> {
                 }
             }
 
-            Ok::<_, std::convert::Infallible>(gix::diff::index::Action::Continue(()))
+            Ok(gix::diff::index::Action::Continue(()))
         },
     )
     .context("could not diff HEAD tree against index")?;
@@ -284,7 +285,7 @@ fn detect_ast_grep_scopes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{CommitScope, Config};
+    use crate::config::CommitScope;
     use indexmap::IndexMap;
     use std::error::Error;
 

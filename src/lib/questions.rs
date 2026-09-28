@@ -138,7 +138,9 @@ impl ScopeAutocompleter {
 
             let commit = repo.find_commit(info.id)?;
 
-            let message = commit.message()?;
+            let message = commit
+                .message()
+                .map_err(|error| anyhow::Error::from(error.into_error()))?;
 
             let summary = message.summary();
 
@@ -470,8 +472,6 @@ pub fn prompt_confirm() -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::Config;
-
     use super::*;
 
     #[test]

@@ -93,7 +93,7 @@ struct ConfigTOML {
     pub allow_empty_scope: bool,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct ConfigArgs {
     pub path: Option<PathBuf>,
     pub autocomplete: Option<bool>,

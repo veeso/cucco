@@ -146,7 +146,8 @@ fn stage_all(repo: &Repository) -> Result<()> {
         repo.object_hash(),
         false,
         Default::default(),
-    )?;
+    )
+    .map_err(|error| anyhow::Error::from(error.into_error()))?;
 
     if !to_remove.is_empty() {
         index.remove_entries(|_, path, _| {
@@ -225,7 +226,9 @@ fn stage_all(repo: &Repository) -> Result<()> {
     // commit (same tree as HEAD) when cocogitto writes the commit.
     index.remove_tree();
 
-    index.write(gix::index::write::Options::default())?;
+    index
+        .write(gix::index::write::Options::default())
+        .map_err(|error| anyhow::Error::from(error.into_error()))?;
     Ok(())
 }
 
