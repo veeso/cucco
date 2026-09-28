@@ -1,18 +1,17 @@
-use anyhow::{Context, Result};
-use gix::bstr::ByteSlice;
-use gix::diff::index::ChangeRef;
-use gix::Repository;
-use indexmap::IndexSet;
-use regex::Regex;
-use std::path::{Path, PathBuf};
-
 #[cfg(feature = "ast-grep")]
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
+use anyhow::{Context, Result};
 #[cfg(feature = "ast-grep")]
 use ast_grep_config::{GlobalRules, RuleCollection, RuleConfig};
 #[cfg(feature = "ast-grep")]
 use ast_grep_language::{LanguageExt, SupportLang};
+use gix::Repository;
+use gix::bstr::ByteSlice;
+use gix::diff::index::ChangeRef;
+use indexmap::IndexSet;
+use regex::Regex;
 
 use crate::config::Config;
 
@@ -284,10 +283,12 @@ fn detect_ast_grep_scopes(
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
+
+    use indexmap::IndexMap;
+
     use super::*;
     use crate::config::CommitScope;
-    use indexmap::IndexMap;
-    use std::error::Error;
 
     fn empty_config(workdir: PathBuf) -> Config {
         Config {

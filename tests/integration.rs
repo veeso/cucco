@@ -1,16 +1,19 @@
-use git2::{IndexAddOption, Repository};
-use indexmap::IndexMap;
-use inquire::autocompletion::Autocomplete;
+use std::error::Error;
+use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
+
 use cucco::config::{CommitScope, Config};
 use cucco::questions::ScopeAutocompleter;
 use cucco::scope::detect_scope_matches;
+use git2::{IndexAddOption, Repository};
+use indexmap::IndexMap;
+use inquire::autocompletion::Autocomplete;
 #[cfg(not(target_os = "windows"))]
 use rexpect::{
     process::WaitStatus,
-    session::{spawn_command, PtySession},
+    session::{PtySession, spawn_command},
 };
-use std::fs;
-use std::{error::Error, path::PathBuf, process::Command};
 use tempfile::TempDir;
 
 #[cfg(not(target_os = "windows"))]
@@ -177,7 +180,9 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(
         commit.body(),
-        Ok(Some("Removed and added a config pair each\nNecessary for future compatibility.\n\ncloses #1\nBREAKING CHANGE: Something can't be configured anymore"))
+        Ok(Some(
+            "Removed and added a config pair each\nNecessary for future compatibility.\n\ncloses #1\nBREAKING CHANGE: Something can't be configured anymore"
+        ))
     );
 
     temp_dir.close()?;
@@ -1200,7 +1205,10 @@ fn test_pre_commit_hook_failure_aborts() -> Result<(), Box<dyn Error>> {
 
     let exitcode = process.process().wait()?;
     let success = matches!(exitcode, WaitStatus::Exited(_, 0));
-    assert!(!success, "expected non-zero exit when pre-commit hook fails");
+    assert!(
+        !success,
+        "expected non-zero exit when pre-commit hook fails"
+    );
 
     let commit = get_last_commit(&repo)?;
     assert_eq!(commit.summary(), Ok(Some("docs: initial")));
@@ -1367,7 +1375,10 @@ fn test_all_stages_modified_and_untracked() -> Result<(), Box<dyn Error>> {
 
     let commit = get_last_commit(&repo)?;
     let tree = commit.tree()?;
-    assert!(tree.get_name("tracked.txt").is_some(), "tracked.txt missing");
+    assert!(
+        tree.get_name("tracked.txt").is_some(),
+        "tracked.txt missing"
+    );
     let untracked_entry = tree
         .get_name("untracked.txt")
         .expect("untracked.txt should be staged by --all");
@@ -1453,7 +1464,10 @@ fn test_no_verify_skips_post_commit_hook() -> Result<(), Box<dyn Error>> {
         panic!("Command exited non-zero, end of output: {eof_output:#?}");
     }
 
-    assert!(!sentinel.exists(), "post-commit hook ran despite --no-verify");
+    assert!(
+        !sentinel.exists(),
+        "post-commit hook ran despite --no-verify"
+    );
     let commit = get_last_commit(&repo)?;
     assert_eq!(commit.summary(), Ok(Some("fix: no post hook")));
 

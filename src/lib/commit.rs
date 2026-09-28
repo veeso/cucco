@@ -1,10 +1,12 @@
-use std::{fs::File, io::Write, path::PathBuf};
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use cocogitto::command::commit::CommitOptions;
 use cocogitto::{CocoGitto, CommitHook};
-use gix::bstr::{BString, ByteSlice};
 use gix::Repository;
+use gix::bstr::{BString, ByteSlice};
 
 /// Generates the commit message
 pub fn generate_commit_msg(
@@ -92,9 +94,9 @@ pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool)
 /// This covers tracked modifications and deletions plus untracked files (but
 /// not ignored files), matching the documented behavior of cucco's `--all`.
 fn stage_all(repo: &Repository) -> Result<()> {
+    use gix::status::UntrackedFiles;
     use gix::status::index_worktree::Item;
     use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};
-    use gix::status::UntrackedFiles;
 
     let workdir = repo
         .workdir()
@@ -141,13 +143,9 @@ fn stage_all(repo: &Repository) -> Result<()> {
     // doesn't exist yet (fresh `git init` with no commits). The file is
     // created on `index.write()` below.
     let index_path = repo.index_path();
-    let mut index = gix::index::File::at_or_default(
-        &index_path,
-        repo.object_hash(),
-        false,
-        Default::default(),
-    )
-    .map_err(|error| anyhow::Error::from(error.into_error()))?;
+    let mut index =
+        gix::index::File::at_or_default(&index_path, repo.object_hash(), false, Default::default())
+            .map_err(|error| anyhow::Error::from(error.into_error()))?;
 
     if !to_remove.is_empty() {
         index.remove_entries(|_, path, _| {

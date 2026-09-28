@@ -251,7 +251,7 @@ allow_empty_scope = false
 - Optional: `true`
 - Description: A list of named commit scopes. Each scope can carry a human-readable `description` (for CLI use), path `patterns` for automatic detection, and an `ast_grep` rule for content-based detection.
 
-*For automatically assigning scopes based on the context of the change*
+_For automatically assigning scopes based on the context of the change_
 
 ```toml
 [[commit_scopes]]

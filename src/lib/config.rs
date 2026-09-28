@@ -1,11 +1,12 @@
+use std::env::current_dir;
+use std::fmt;
+use std::path::PathBuf;
+
 use anyhow::Result;
 use config::FileFormat;
 use dirs::config_dir;
 use indexmap::IndexMap;
 use serde::Deserialize;
-use std::env::current_dir;
-use std::fmt;
-use std::path::PathBuf;
 #[cfg(any(unix, target_os = "redox"))]
 use xdg::BaseDirectories;
 
@@ -190,8 +191,9 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::error::Error;
+
+    use super::*;
 
     #[test]
     fn test_from_path() -> Result<(), Box<dyn Error>> {

@@ -5,12 +5,12 @@ use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use cocogitto::command::commit::CommitOptions;
 use conventional_commit_parser::parse;
-use cucco::answers::{get_extracted_answers, ExtractedAnswers};
+use cucco::answers::{ExtractedAnswers, get_extracted_answers};
 use cucco::commit::{commit, generate_commit_msg, write_commit_msg};
 use cucco::config::{Config, ConfigArgs};
 use cucco::questions::{create_prompt, prompt_confirm};
 use cucco::scope::{detect_scope_matches, stage_tracked_changes};
-use cucco::status::{check_staging, StagingStatus};
+use cucco::status::{StagingStatus, check_staging};
 
 #[derive(Parser, Debug)]
 #[command(

@@ -1,17 +1,16 @@
-use crate::config::{CommitType, Config};
-use crate::scope::ScopeMatches;
 use anyhow::{Context, Result};
 use conventional_commit_parser::parse_summary;
 use gix::bstr::ByteSlice;
 use indexmap::IndexMap;
+use inquire::autocompletion::{Autocomplete, Replacement};
 use inquire::error::InquireError;
 use inquire::ui::{Attributes, Color, RenderConfig, StyleSheet};
-use inquire::{
-    autocompletion::{Autocomplete, Replacement},
-    validator::Validation,
-    Confirm, CustomUserError, Select, Text,
-};
+use inquire::validator::Validation;
+use inquire::{Confirm, CustomUserError, Select, Text};
 use thiserror::Error;
+
+use crate::config::{CommitType, Config};
+use crate::scope::ScopeMatches;
 
 #[derive(Debug, Error)]
 enum PromptError {
@@ -533,16 +532,20 @@ mod tests {
         let validated = validate_summary("needed more badges :badger:");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Summary should be OK")
-            .eq(&Validation::Valid));
+        assert!(
+            validated
+                .expect("Summary should be OK")
+                .eq(&Validation::Valid)
+        );
 
         let validated = validate_summary("");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Summary should be OK")
-            .eq(&Validation::Invalid("A summary is required".into())));
+        assert!(
+            validated
+                .expect("Summary should be OK")
+                .eq(&Validation::Invalid("A summary is required".into()))
+        );
     }
 
     #[test]
@@ -550,17 +553,21 @@ mod tests {
         let validated = validate_issue_reference("closes #123");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Issue reference should be OK")
-            .eq(&Validation::Valid));
+        assert!(
+            validated
+                .expect("Issue reference should be OK")
+                .eq(&Validation::Valid)
+        );
 
         let validated = validate_issue_reference("");
 
         assert!(validated.is_ok());
-        assert!(validated
-            .expect("Summary should be OK")
-            .eq(&Validation::Invalid(
-                "An issue reference is required".into()
-            )));
+        assert!(
+            validated
+                .expect("Summary should be OK")
+                .eq(&Validation::Invalid(
+                    "An issue reference is required".into()
+                ))
+        );
     }
 }
