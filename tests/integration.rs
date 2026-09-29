@@ -443,6 +443,63 @@ fn test_all_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_add_all_hook_exclusive_error() -> Result<(), Box<dyn Error>> {
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
+
+    let mut cmd = Command::new(bin_path);
+    cmd.arg("--hook");
+    cmd.arg("--add-all");
+
+    let cmd_out = cmd.output()?;
+    let stderr_out = String::from_utf8(cmd_out.stderr)?;
+
+    assert!(!cmd_out.status.success());
+    assert!(stderr_out.contains("cannot be used with"));
+    assert!(stderr_out.contains("'--hook'"));
+    assert!(stderr_out.contains("'--add-all'"));
+
+    Ok(())
+}
+
+#[test]
+fn test_add_all_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
+
+    let mut cmd = Command::new(bin_path);
+    cmd.arg("--stdout");
+    cmd.arg("--add-all");
+
+    let cmd_out = cmd.output()?;
+    let stderr_out = String::from_utf8(cmd_out.stderr)?;
+
+    assert!(!cmd_out.status.success());
+    assert!(stderr_out.contains("cannot be used with"));
+    assert!(stderr_out.contains("'--stdout'"));
+    assert!(stderr_out.contains("'--add-all'"));
+
+    Ok(())
+}
+
+#[test]
+fn test_all_add_all_exclusive_error() -> Result<(), Box<dyn Error>> {
+    let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
+
+    let mut cmd = Command::new(bin_path);
+    cmd.arg("-a");
+    cmd.arg("-A");
+
+    let cmd_out = cmd.output()?;
+    let stderr_out = String::from_utf8(cmd_out.stderr)?;
+
+    assert!(!cmd_out.status.success());
+    assert!(stderr_out.contains("cannot be used with"));
+    assert!(stderr_out.contains("'--all'"));
+    assert!(stderr_out.contains("'--add-all'"));
+
+    Ok(())
+}
+
+#[test]
 fn test_hook_stdout_exclusive_error() -> Result<(), Box<dyn Error>> {
     let bin_path = assert_cmd::cargo::cargo_bin!("cucco");
 
@@ -1344,27 +1401,29 @@ fn test_post_commit_hook_failure_does_not_abort() -> Result<(), Box<dyn Error>> 
 
 #[test]
 #[cfg(not(target_os = "windows"))]
-fn test_all_stages_modified_and_untracked() -> Result<(), Box<dyn Error>> {
+fn test_add_all_stages_modified_deleted_and_untracked() -> Result<(), Box<dyn Error>> {
     let (bin_path, temp_dir, repo) = setup_test_dir()?;
     let config_temp_dir = setup_config_home()?;
 
     fs::write(temp_dir.path().join("tracked.txt"), "v1")?;
+    fs::write(temp_dir.path().join("removed.txt"), "r")?;
     git_add(&repo, ".")?;
     do_initial_commit(&repo, "docs: initial")?;
 
-    fs::write(temp_dir.path().join("tracked.txt"), "v2")?;
+    fs::write(temp_dir.path().join("tracked.txt"), "version two")?;
+    fs::remove_file(temp_dir.path().join("removed.txt"))?;
     fs::write(temp_dir.path().join("untracked.txt"), "u")?;
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
         .arg("-C")
         .arg(temp_dir.path())
-        .arg("--all")
+        .arg("--add-all")
         .arg("-y")
         .arg("--autocomplete=true");
 
     let mut process = spawn_command(cmd, Some(5000))?;
-    drive_simple_fix_commit(&mut process, "stage modified and untracked")?;
+    drive_simple_fix_commit(&mut process, "stage everything")?;
     let eof_output = process.exp_eof();
 
     let exitcode = process.process().wait()?;
@@ -1374,14 +1433,18 @@ fn test_all_stages_modified_and_untracked() -> Result<(), Box<dyn Error>> {
     }
 
     let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: stage everything")));
     let tree = commit.tree()?;
+    let tracked_entry = tree.get_name("tracked.txt").expect("tracked.txt missing");
+    let tracked_blob = repo.find_blob(tracked_entry.id())?;
+    assert_eq!(tracked_blob.content(), b"version two");
     assert!(
-        tree.get_name("tracked.txt").is_some(),
-        "tracked.txt missing"
+        tree.get_name("removed.txt").is_none(),
+        "removed.txt deletion should be staged by --add-all"
     );
     let untracked_entry = tree
         .get_name("untracked.txt")
-        .expect("untracked.txt should be staged by --all");
+        .expect("untracked.txt should be staged by --add-all");
     let blob = repo.find_blob(untracked_entry.id())?;
     assert_eq!(blob.content(), b"u");
 
@@ -1392,7 +1455,7 @@ fn test_all_stages_modified_and_untracked() -> Result<(), Box<dyn Error>> {
 
 #[test]
 #[cfg(not(target_os = "windows"))]
-fn test_all_stages_in_fresh_repo_without_initial_commit() -> Result<(), Box<dyn Error>> {
+fn test_add_all_stages_in_fresh_repo_without_initial_commit() -> Result<(), Box<dyn Error>> {
     let (bin_path, temp_dir, repo) = setup_test_dir()?;
     let config_temp_dir = setup_config_home()?;
 
@@ -1402,7 +1465,7 @@ fn test_all_stages_in_fresh_repo_without_initial_commit() -> Result<(), Box<dyn 
     cmd.env("NO_COLOR", "1")
         .arg("-C")
         .arg(temp_dir.path())
-        .arg("--all")
+        .arg("-A")
         .arg("-y")
         .arg("--autocomplete=true");
 
@@ -1420,12 +1483,132 @@ fn test_all_stages_in_fresh_repo_without_initial_commit() -> Result<(), Box<dyn 
     let tree = commit.tree()?;
     let untracked_entry = tree
         .get_name("untracked.txt")
-        .expect("untracked.txt should be staged by --all");
+        .expect("untracked.txt should be staged by -A");
     let blob = repo.find_blob(untracked_entry.id())?;
     assert_eq!(blob.content(), b"u");
 
     temp_dir.close()?;
     config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_all_stages_tracked_but_not_untracked() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("tracked.txt"), "v1")?;
+    fs::write(temp_dir.path().join("removed.txt"), "r")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    // Unstaged modification and deletion of tracked files.
+    fs::write(temp_dir.path().join("tracked.txt"), "version two")?;
+    fs::remove_file(temp_dir.path().join("removed.txt"))?;
+    // A new file the user staged on purpose.
+    fs::write(temp_dir.path().join("staged_new.txt"), "s")?;
+    git_add(&repo, "staged_new.txt")?;
+    // A new file the user never staged.
+    fs::write(temp_dir.path().join("untracked.txt"), "u")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-a")
+        .arg("-y")
+        .arg("--autocomplete=true");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+    drive_simple_fix_commit(&mut process, "stage tracked only")?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.summary(), Ok(Some("fix: stage tracked only")));
+    let tree = commit.tree()?;
+
+    let tracked_entry = tree.get_name("tracked.txt").expect("tracked.txt missing");
+    let tracked_blob = repo.find_blob(tracked_entry.id())?;
+    assert_eq!(tracked_blob.content(), b"version two");
+    assert!(
+        tree.get_name("removed.txt").is_none(),
+        "removed.txt deletion should be staged by -a"
+    );
+    assert!(
+        tree.get_name("staged_new.txt").is_some(),
+        "staged_new.txt was staged by the user and must be committed"
+    );
+    assert!(
+        tree.get_name("untracked.txt").is_none(),
+        "untracked.txt must not be staged by -a"
+    );
+
+    assert!(temp_dir.path().join("untracked.txt").exists());
+    assert_eq!(
+        repo.status_file(std::path::Path::new("untracked.txt"))?,
+        git2::Status::WT_NEW
+    );
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+fn test_all_with_only_untracked_files_errors() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+
+    fs::write(temp_dir.path().join("README.md"), "hello")?;
+    git_add(&repo, ".")?;
+    do_initial_commit(&repo, "docs: initial")?;
+
+    fs::write(temp_dir.path().join("untracked.txt"), "u")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.arg("-C").arg(temp_dir.path()).arg("-a").arg("-y");
+
+    let cmd_out = cmd.output()?;
+    let stderr_out = String::from_utf8(cmd_out.stderr)?;
+
+    assert!(!cmd_out.status.success());
+    assert!(
+        stderr_out.contains("no tracked changes to commit"),
+        "expected 'no tracked changes to commit' in stderr, got: {stderr_out}"
+    );
+    let head = repo.head()?.peel_to_commit()?;
+    assert_eq!(head.summary(), Ok(Some("docs: initial")));
+
+    temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+fn test_all_in_fresh_repo_with_only_untracked_errors() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+
+    fs::write(temp_dir.path().join("untracked.txt"), "u")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.arg("-C").arg(temp_dir.path()).arg("--all").arg("-y");
+
+    let cmd_out = cmd.output()?;
+    let stderr_out = String::from_utf8(cmd_out.stderr)?;
+
+    assert!(!cmd_out.status.success());
+    assert!(
+        stderr_out.contains("no tracked changes to commit"),
+        "expected 'no tracked changes to commit' in stderr, got: {stderr_out}"
+    );
+    assert!(repo.head().is_err(), "no commit must have been created");
+
+    temp_dir.close()?;
     Ok(())
 }
 

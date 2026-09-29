@@ -107,8 +107,8 @@ impl Config {
     }
 }
 
-/// Stage all tracked modified/deleted files so
-/// that scope detection sees the full, entire diff when `--all` is passed.
+/// Stage all tracked modified/deleted files so that scope detection sees the
+/// full, entire diff when `--all` or `--add-all` is passed.
 pub fn stage_tracked_changes(repo: &Repository) -> Result<()> {
     let workdir = repo
         .workdir()

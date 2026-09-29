@@ -51,9 +51,14 @@ pub fn write_commit_msg(
 ///
 /// Staging is always performed by cucco (never delegated to cocogitto) so that
 /// the same set of files is staged regardless of whether `no_verify` is set.
-/// When staging is requested (`add_files` or `update_files`) every unstaged
-/// change is staged: tracked modifications, deletions, and untracked files
-/// (matching `git add -A`), aligning with cucco's documented `--all` flag.
+///
+/// - `options.add_files` stages every change: tracked modifications,
+///   deletions, and untracked files (matching `git add -A`). This backs
+///   cucco's `--add-all` flag.
+/// - `options.update_files` stages tracked modifications and deletions only,
+///   never untracked files (matching `git commit -a`). This backs cucco's
+///   `--all` flag.
+/// - When both are set, `options.add_files` wins.
 ///
 /// When `no_verify` is `false`, the `pre-commit` and `post-commit` git hooks
 /// are invoked around the commit. `post-commit` failures are reported as a
@@ -63,13 +68,14 @@ pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool)
     let config_path = current_dir.join("cog.toml");
     cocogitto::set_config_path(config_path.to_string_lossy().to_string());
 
+    let include_untracked = options.add_files;
     let stage_requested = options.add_files || options.update_files;
     options.add_files = false;
     options.update_files = false;
 
     if stage_requested {
         let repo = gix::discover(&current_dir)?;
-        stage_all(&repo)?;
+        stage_changes(&repo, include_untracked)?;
     }
 
     let cocogitto = CocoGitto::get_at(current_dir)?;
@@ -89,11 +95,12 @@ pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool)
     Ok(())
 }
 
-/// Stage every unstaged change via gix, equivalent to `git add -A`.
+/// Stage unstaged changes via gix.
 ///
-/// This covers tracked modifications and deletions plus untracked files (but
-/// not ignored files), matching the documented behavior of cucco's `--all`.
-fn stage_all(repo: &Repository) -> Result<()> {
+/// Tracked modifications and deletions are always staged, equivalent to
+/// `git add -u`. When `include_untracked` is `true`, untracked files (but not
+/// ignored files) are staged too, equivalent to `git add -A`.
+fn stage_changes(repo: &Repository, include_untracked: bool) -> Result<()> {
     use gix::status::UntrackedFiles;
     use gix::status::index_worktree::Item;
     use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};
@@ -107,9 +114,15 @@ fn stage_all(repo: &Repository) -> Result<()> {
     let mut to_update: Vec<BString> = Vec::new();
     let mut to_add: Vec<UntrackedAdd> = Vec::new();
 
+    let untracked_files = if include_untracked {
+        UntrackedFiles::Files
+    } else {
+        UntrackedFiles::None
+    };
+
     let iter = repo
         .status(gix::progress::Discard)?
-        .untracked_files(UntrackedFiles::Files)
+        .untracked_files(untracked_files)
         .into_index_worktree_iter(Vec::new())?;
 
     for item in iter {
@@ -124,7 +137,7 @@ fn stage_all(repo: &Repository) -> Result<()> {
                 _ => {}
             },
             Item::DirectoryContents { entry, .. } => {
-                if entry.status != gix::dir::entry::Status::Untracked {
+                if !include_untracked || entry.status != gix::dir::entry::Status::Untracked {
                     continue;
                 }
                 if let Some(add) = UntrackedAdd::from_dir_entry(entry) {

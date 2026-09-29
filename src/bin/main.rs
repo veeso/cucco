@@ -10,7 +10,7 @@ use cucco::commit::{commit, generate_commit_msg, write_commit_msg};
 use cucco::config::{Config, ConfigArgs};
 use cucco::questions::{create_prompt, prompt_confirm};
 use cucco::scope::{detect_scope_matches, stage_tracked_changes};
-use cucco::status::{StagingStatus, check_staging};
+use cucco::status::{StagingStatus, check_staging, has_tracked_changes};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -63,7 +63,8 @@ struct Args {
     #[arg(
         long,
         help = "Run as a git hook, writing the commit message to COMMIT_EDITMSG instead of committing",
-        conflicts_with = "all"
+        conflicts_with = "all",
+        conflicts_with = "add_all"
     )]
     hook: bool,
 
@@ -71,6 +72,7 @@ struct Args {
         long,
         help = "Outputs the commit message to stdout instead of committing",
         conflicts_with = "all",
+        conflicts_with = "add_all",
         conflicts_with = "hook"
     )]
     stdout: bool,
@@ -99,9 +101,17 @@ struct Args {
     #[arg(
         short,
         long,
-        help = "Stage all changes (modified, deleted, and untracked files)"
+        help = "Stage modified and deleted tracked files, like `git commit -a`"
     )]
     all: bool,
+
+    #[arg(
+        short = 'A',
+        long,
+        help = "Stage all changes, untracked files included, like `git add -A`",
+        conflicts_with = "all"
+    )]
+    add_all: bool,
 
     #[arg(
         long,
@@ -145,6 +155,7 @@ fn main() -> Result<()> {
         issues,
         sign,
         all,
+        add_all,
         no_verify,
         yes,
         current_workdir,
@@ -179,19 +190,26 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // --hook and --stdout don't create commits; --all stages everything (incl. untracked)
-    if !hook && !stdout && !all {
-        match check_staging(&repo)? {
-            StagingStatus::Empty => {
-                anyhow::bail!("no files staged for commit");
+    // --hook and --stdout don't create commits; --add-all stages everything (incl. untracked)
+    if !hook && !stdout && !add_all {
+        if all {
+            // --all stages tracked changes itself, so unstaged tracked changes count too
+            if !has_tracked_changes(&repo)? {
+                anyhow::bail!("no tracked changes to commit (use -A to include untracked files)");
             }
-            StagingStatus::Partial { staged, unstaged } => {
-                eprintln!(
-                    "Warning: {staged} file(s) staged for commit, \
-                     {unstaged} file(s) with unstaged changes not included\n"
-                );
+        } else {
+            match check_staging(&repo)? {
+                StagingStatus::Empty => {
+                    anyhow::bail!("no files staged for commit");
+                }
+                StagingStatus::Partial { staged, unstaged } => {
+                    eprintln!(
+                        "Warning: {staged} file(s) staged for commit, \
+                         {unstaged} file(s) with unstaged changes not included\n"
+                    );
+                }
+                StagingStatus::Ready { .. } => {}
             }
-            StagingStatus::Ready { .. } => {}
         }
     }
 
@@ -208,9 +226,9 @@ fn main() -> Result<()> {
         ..Default::default()
     }))?;
 
-    // When --all is set, stage tracked changes before anything else, so scope detection sees the ENTIRE diff.
-    // Afterwards, the commit step will re-stage idempotently.
-    if all && repo.index_path().exists() {
+    // When --all or --add-all is set, stage tracked changes before anything else, so scope detection
+    // sees the ENTIRE diff. Afterwards, the commit step will re-stage idempotently.
+    if (all || add_all) && repo.index_path().exists() {
         stage_tracked_changes(&repo).context("failed to pre-stage tracked files")?;
     }
 
@@ -267,8 +285,8 @@ fn main() -> Result<()> {
             footer: None,
             breaking: is_breaking_change,
             sign: config.sign,
-            add_files: all,
-            update_files: false,
+            add_files: add_all,
+            update_files: all,
         };
 
         commit(current_dir, options, no_verify)?;
