@@ -31,7 +31,8 @@ The toolchain is pinned to Rust 1.98.1 with edition 2021. Keep
 - `src/lib/lib.rs`: library root exporting the modules below.
 - `src/lib/answers.rs`: turns prompt answers into commit parts.
 - `src/lib/commit.rs`: message generation, `COMMIT_EDITMSG` writing, staging
-  (`git add -A` semantics) and the commit itself, including `pre-commit` and
+  (`git commit -a` semantics for `--all`, `git add -A` semantics for
+  `--add-all`) and the commit itself, including `pre-commit` and
   `post-commit` hooks through cocogitto.
 - `src/lib/config.rs`: layered configuration (`.cucco.toml`,
   `cucco/config.toml`, defaults embedded from `meta/config/default.toml`).

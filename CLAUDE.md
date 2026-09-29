@@ -43,8 +43,9 @@ Never request build or test parallelism above eight from the CLI.
   (`scope.rs`), runs the interactive prompts (`questions.rs`), extracts the
   answers (`answers.rs`), and either prints the message (`--stdout`), writes
   `COMMIT_EDITMSG` (`--hook`), or commits (`commit.rs`).
-- **Commit and hooks.** `commit::commit` stages every change itself when
-  `--all` is set (`git add -A` semantics through gix), then runs the
+- **Commit and hooks.** `commit::commit` does the staging itself through gix:
+  tracked changes only when `--all` is set (`git commit -a` semantics), every
+  change when `--add-all` is set (`git add -A` semantics). It then runs the
   repository `pre-commit` hook, creates the commit through cocogitto, and
   runs `post-commit`. `--no-verify` skips both hooks. A failing `pre-commit`
   aborts; a failing `post-commit` only warns.

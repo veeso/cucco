@@ -91,6 +91,20 @@ cucco
 
 See `cucco --help` for more options.
 
+Like `git commit`, cucco can stage changes for you:
+
+```sh
+# Stage modified and deleted tracked files, like `git commit -a`
+cucco -a
+
+# Stage everything, untracked files included, like `git add -A`
+cucco -A
+```
+
+`-a`/`--all` never stages untracked files. `-A`/`--add-all` stages them, but
+not ignored files. The two flags cannot be combined, and neither can be used
+with `--hook` or `--stdout`.
+
 Use `cucco completions <SHELL>` to generate completion scripts for your shell.
 
 ### Git hooks
@@ -107,9 +121,8 @@ Pass `--no-verify` to bypass both hooks:
 cucco --no-verify
 ```
 
-When `--all` is set, cucco stages every change (modified, deleted and untracked
-files, matching `git add -A`) before `pre-commit` runs, regardless of whether
-hooks are enabled.
+When `--all` or `--add-all` is set, cucco stages the changes before
+`pre-commit` runs, regardless of whether hooks are enabled.
 
 ## Using as a git hook
 
