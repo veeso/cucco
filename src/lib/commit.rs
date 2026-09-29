@@ -9,6 +9,8 @@ use cocogitto::command::commit::CommitOptions;
 use cocogitto::{CocoGitto, CommitHook};
 use gix::Repository;
 use gix::bstr::{BString, ByteSlice};
+use gix::status::index_worktree::Item;
+use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};
 
 /// Generates the conventional commit message.
 ///
@@ -16,17 +18,17 @@ use gix::bstr::{BString, ByteSlice};
 ///
 /// Returns an error if cocogitto rejects the message parts.
 pub fn generate_commit_msg(
-    commit_type: String,
-    scope: Option<String>,
-    summary: String,
-    body: Option<String>,
+    commit_type: &str,
+    scope: Option<&str>,
+    summary: &str,
+    body: Option<&str>,
     is_breaking_change: bool,
 ) -> Result<String> {
     let message = CocoGitto::get_conventional_message(
-        &commit_type,
-        scope,
-        summary,
-        body,
+        commit_type,
+        scope.map(str::to_owned),
+        summary.to_owned(),
+        body.map(str::to_owned),
         None,
         is_breaking_change,
     )?;
@@ -42,10 +44,10 @@ pub fn generate_commit_msg(
 /// written.
 pub fn write_commit_msg(
     repo: &Repository,
-    commit_type: String,
-    scope: Option<String>,
-    summary: String,
-    body: Option<String>,
+    commit_type: &str,
+    scope: Option<&str>,
+    summary: &str,
+    body: Option<&str>,
     is_breaking_change: bool,
 ) -> Result<()> {
     let message = generate_commit_msg(commit_type, scope, summary, body, is_breaking_change)?;
@@ -109,24 +111,23 @@ pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool)
     Ok(())
 }
 
-/// Stage unstaged changes via gix.
+/// Stages unstaged changes via gix.
 ///
 /// Tracked modifications and deletions are always staged, equivalent to
 /// `git add -u`. When `include_untracked` is `true`, untracked files (but not
 /// ignored files) are staged too, equivalent to `git add -A`.
-fn stage_changes(repo: &Repository, include_untracked: bool) -> Result<()> {
+///
+/// # Errors
+///
+/// Returns an error if the repository has no working directory, the worktree
+/// status cannot be read, or the index cannot be read or written.
+pub fn stage_changes(repo: &Repository, include_untracked: bool) -> Result<()> {
     use gix::status::UntrackedFiles;
-    use gix::status::index_worktree::Item;
-    use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};
 
     let workdir = repo
         .workdir()
         .ok_or_else(|| anyhow!("repository has no working directory"))?
         .to_path_buf();
-
-    let mut to_remove: Vec<BString> = Vec::new();
-    let mut to_update: Vec<BString> = Vec::new();
-    let mut to_add: Vec<UntrackedAdd> = Vec::new();
 
     let untracked_files = if include_untracked {
         UntrackedFiles::Files
@@ -139,26 +140,18 @@ fn stage_changes(repo: &Repository, include_untracked: bool) -> Result<()> {
         .untracked_files(untracked_files)
         .into_index_worktree_iter(Vec::new())?;
 
-    for item in iter {
-        match item? {
-            Item::Modification {
-                rela_path, status, ..
-            } => match status {
-                EntryStatus::Change(Change::Removed) => to_remove.push(rela_path),
-                EntryStatus::Change(Change::Modification { .. } | Change::Type { .. }) => {
-                    to_update.push(rela_path);
-                }
-                _ => {}
-            },
-            Item::DirectoryContents { entry, .. } => {
-                if !include_untracked || entry.status != gix::dir::entry::Status::Untracked {
-                    continue;
-                }
-                if let Some(add) = UntrackedAdd::from_dir_entry(entry) {
-                    to_add.push(add);
-                }
-            }
-            _ => {}
+    let pending = iter
+        .map(|item| item.map(|item| PendingChange::from_item(item, include_untracked)))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let mut to_remove: Vec<BString> = Vec::new();
+    let mut to_update: Vec<BString> = Vec::new();
+    let mut to_add: Vec<UntrackedAdd> = Vec::new();
+    for change in pending.into_iter().flatten() {
+        match change {
+            PendingChange::Remove(path) => to_remove.push(path),
+            PendingChange::Update(path) => to_update.push(path),
+            PendingChange::Add(add) => to_add.push(add),
         }
     }
 
@@ -257,6 +250,37 @@ fn stage_changes(repo: &Repository, include_untracked: bool) -> Result<()> {
     Ok(())
 }
 
+/// A worktree change that has to be recorded in the index.
+enum PendingChange {
+    Remove(BString),
+    Update(BString),
+    Add(UntrackedAdd),
+}
+
+impl PendingChange {
+    /// Classifies a worktree status item, skipping anything not stageable.
+    fn from_item(item: Item, include_untracked: bool) -> Option<Self> {
+        match item {
+            Item::Modification {
+                rela_path,
+                status: EntryStatus::Change(Change::Removed),
+                ..
+            } => Some(Self::Remove(rela_path)),
+            Item::Modification {
+                rela_path,
+                status: EntryStatus::Change(Change::Modification { .. } | Change::Type { .. }),
+                ..
+            } => Some(Self::Update(rela_path)),
+            Item::DirectoryContents { entry, .. }
+                if include_untracked && entry.status == gix::dir::entry::Status::Untracked =>
+            {
+                UntrackedAdd::from_dir_entry(entry).map(Self::Add)
+            }
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 enum UntrackedKind {
     File,
@@ -302,22 +326,16 @@ mod tests {
 
     #[test]
     fn test_generate_commit_msg() {
-        let message = generate_commit_msg(
-            "feat".into(),
-            Some("space".into()),
-            "add more space".into(),
-            Some("body".into()),
-            true,
-        )
-        .unwrap();
+        let message =
+            generate_commit_msg("feat", Some("space"), "add more space", Some("body"), true)
+                .unwrap();
 
         assert_eq!(message, "feat(space)!: add more space\n\nbody");
     }
 
     #[test]
     fn test_generate_commit_msg_minimal() {
-        let message =
-            generate_commit_msg("fix".into(), None, "patch it".into(), None, false).unwrap();
+        let message = generate_commit_msg("fix", None, "patch it", None, false).unwrap();
 
         assert_eq!(message, "fix: patch it");
     }
@@ -328,9 +346,96 @@ mod tests {
         gix::init(tempdir.path()).unwrap();
         let repo = gix::discover(tempdir.path()).unwrap();
 
-        write_commit_msg(&repo, "fix".into(), None, "patch it".into(), None, false).unwrap();
+        write_commit_msg(&repo, "fix", None, "patch it", None, false).unwrap();
 
         let written = std::fs::read_to_string(repo.path().join("COMMIT_EDITMSG")).unwrap();
         assert_eq!(written, "fix: patch it");
+    }
+
+    /// Creates a repository whose only commit tracks `keep.txt` and `gone.txt`.
+    fn init_repo_with_commit(dir: &std::path::Path) -> git2::Repository {
+        let repo = git2::Repository::init(dir).unwrap();
+        std::fs::write(dir.join("keep.txt"), "v1").unwrap();
+        std::fs::write(dir.join("gone.txt"), "v1").unwrap();
+        let mut index = repo.index().unwrap();
+        index.add_path(std::path::Path::new("keep.txt")).unwrap();
+        index.add_path(std::path::Path::new("gone.txt")).unwrap();
+        index.write().unwrap();
+        let tree = repo.find_tree(index.write_tree().unwrap()).unwrap();
+        let sig = git2::Signature::now("Tester", "test@example.com").unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "chore: initial", &tree, &[])
+            .unwrap();
+        drop(tree);
+        repo
+    }
+
+    fn blob_id(content: &str) -> git2::Oid {
+        git2::Oid::hash_object(git2::ObjectType::Blob, content.as_bytes()).unwrap()
+    }
+
+    fn staged_id(repo: &git2::Repository, path: &str) -> Option<git2::Oid> {
+        let mut index = repo.index().unwrap();
+        index.read(true).unwrap();
+        index.get_path(std::path::Path::new(path), 0).map(|e| e.id)
+    }
+
+    #[test]
+    fn test_stage_changes_stages_tracked_but_not_untracked() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let repo = init_repo_with_commit(tempdir.path());
+        std::fs::write(tempdir.path().join("keep.txt"), "version two").unwrap();
+        std::fs::remove_file(tempdir.path().join("gone.txt")).unwrap();
+        std::fs::write(tempdir.path().join("new.txt"), "new").unwrap();
+
+        let gix_repo = gix::discover(tempdir.path()).unwrap();
+        stage_changes(&gix_repo, false).unwrap();
+
+        assert_eq!(staged_id(&repo, "keep.txt"), Some(blob_id("version two")));
+        assert_eq!(staged_id(&repo, "gone.txt"), None);
+        assert_eq!(staged_id(&repo, "new.txt"), None);
+    }
+
+    #[test]
+    fn test_stage_changes_includes_untracked_when_requested() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let repo = init_repo_with_commit(tempdir.path());
+        std::fs::write(tempdir.path().join("new.txt"), "new").unwrap();
+        std::fs::write(tempdir.path().join(".gitignore"), "ignored.txt\n").unwrap();
+        std::fs::write(tempdir.path().join("ignored.txt"), "ignored").unwrap();
+
+        let gix_repo = gix::discover(tempdir.path()).unwrap();
+        stage_changes(&gix_repo, true).unwrap();
+
+        assert_eq!(staged_id(&repo, "new.txt"), Some(blob_id("new")));
+        assert_eq!(
+            staged_id(&repo, ".gitignore"),
+            Some(blob_id("ignored.txt\n"))
+        );
+        assert_eq!(staged_id(&repo, "ignored.txt"), None);
+        assert_eq!(staged_id(&repo, "keep.txt"), Some(blob_id("v1")));
+    }
+
+    #[test]
+    fn test_stage_changes_works_without_initial_commit() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let repo = git2::Repository::init(tempdir.path()).unwrap();
+        std::fs::write(tempdir.path().join("new.txt"), "new").unwrap();
+
+        let gix_repo = gix::discover(tempdir.path()).unwrap();
+        stage_changes(&gix_repo, true).unwrap();
+
+        assert_eq!(staged_id(&repo, "new.txt"), Some(blob_id("new")));
+    }
+
+    #[test]
+    fn test_stage_changes_without_changes_leaves_index_untouched() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let repo = init_repo_with_commit(tempdir.path());
+
+        let gix_repo = gix::discover(tempdir.path()).unwrap();
+        stage_changes(&gix_repo, true).unwrap();
+
+        assert_eq!(staged_id(&repo, "keep.txt"), Some(blob_id("v1")));
+        assert_eq!(staged_id(&repo, "gone.txt"), Some(blob_id("v1")));
     }
 }

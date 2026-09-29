@@ -485,4 +485,115 @@ mod tests {
         assert_eq!(prompt.cursor, prompt.content.len());
         assert_eq!(prompt.content.graphemes(true).count(), 1);
     }
+
+    fn prompt_with(content: &str) -> PromptState<'static> {
+        let mut prompt = PromptState::new("", "");
+        prompt.insert_str(content);
+        prompt
+    }
+
+    #[test]
+    fn insert_char_ignores_control_characters_but_keeps_newlines() {
+        let mut prompt = prompt_with("");
+        prompt.insert_char('a');
+        prompt.insert_char('\u{7}');
+        prompt.insert_char('\n');
+        prompt.insert_char('b');
+
+        assert_eq!(prompt.content, "a\nb");
+        assert_eq!(prompt.cursor, 3);
+    }
+
+    #[test]
+    fn cursor_moves_by_grapheme() {
+        let mut prompt = prompt_with("a👩\u{200d}👩b");
+
+        prompt.move_left();
+        assert_eq!(prompt.cursor, "a👩\u{200d}👩".len());
+        prompt.move_left();
+        assert_eq!(prompt.cursor, "a".len());
+        prompt.move_left();
+        prompt.move_left();
+        assert_eq!(prompt.cursor, 0);
+
+        prompt.move_right();
+        prompt.move_right();
+        assert_eq!(prompt.cursor, "a👩\u{200d}👩".len());
+        prompt.move_right();
+        prompt.move_right();
+        assert_eq!(prompt.cursor, prompt.content.len());
+    }
+
+    #[test]
+    fn backspace_removes_the_previous_grapheme() {
+        let mut prompt = prompt_with("ab👩\u{200d}👩");
+
+        prompt.delete_before_cursor();
+        assert_eq!(prompt.content, "ab");
+        prompt.delete_before_cursor();
+        prompt.delete_before_cursor();
+        prompt.delete_before_cursor();
+        assert_eq!(prompt.content, "");
+        assert_eq!(prompt.cursor, 0);
+    }
+
+    #[test]
+    fn delete_removes_the_next_grapheme_and_word() {
+        let mut prompt = prompt_with("one two three");
+        prompt.cursor = 0;
+
+        prompt.delete_after_cursor();
+        assert_eq!(prompt.content, "ne two three");
+
+        prompt.delete_word_after_cursor();
+        assert_eq!(prompt.content, " two three");
+        assert_eq!(prompt.cursor, 0);
+
+        prompt.cursor = prompt.content.len();
+        prompt.delete_after_cursor();
+        prompt.delete_word_after_cursor();
+        assert_eq!(prompt.content, " two three");
+    }
+
+    #[test]
+    fn word_moves_update_the_cursor() {
+        let mut prompt = prompt_with("one two");
+        prompt.cursor = 0;
+
+        prompt.move_to_next_word();
+        assert_eq!(prompt.cursor, 3);
+        prompt.move_to_next_word();
+        assert_eq!(prompt.cursor, 7);
+        prompt.move_to_previous_word();
+        assert_eq!(prompt.cursor, 4);
+        prompt.move_to_previous_word();
+        assert_eq!(prompt.cursor, 0);
+    }
+
+    #[test]
+    fn display_position_wraps_and_counts_widths() {
+        let mut position = DisplayPosition::default();
+        for grapheme in ["a", "b", "c", "d"] {
+            position.advance(grapheme, 3);
+        }
+        assert_eq!((position.row, position.column), (1, 1));
+
+        let mut position = DisplayPosition::default();
+        position.advance("\n", 3);
+        assert_eq!((position.row, position.column), (1, 0));
+
+        let mut position = DisplayPosition::default();
+        position.advance("\u{301}", 3);
+        assert_eq!((position.row, position.column), (0, 0));
+    }
+
+    #[test]
+    fn write_multiline_uses_carriage_returns() {
+        let mut output = Vec::new();
+        write_multiline(&mut output, "one\ntwo").unwrap();
+
+        let output = String::from_utf8(output).unwrap();
+        assert!(output.contains("one\r\n"));
+        assert!(output.ends_with("two"));
+    }
 }
