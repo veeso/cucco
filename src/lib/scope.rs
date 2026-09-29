@@ -1,3 +1,5 @@
+//! Scope detection from staged paths and ast-grep rules.
+
 #[cfg(feature = "ast-grep")]
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -20,12 +22,17 @@ use crate::config::Config;
 /// the HEAD-side blob for deletions).
 struct StagedChange {
     path: PathBuf,
-    #[cfg_attr(not(feature = "ast-grep"), allow(dead_code))]
+    #[cfg_attr(
+        not(feature = "ast-grep"),
+        expect(dead_code, reason = "only read by ast-grep detection")
+    )]
     id: gix::ObjectId,
 }
 
+/// Scopes detected from the staged changes.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ScopeMatches {
+    /// Names of every scope matched by a staged change.
     pub matches: Vec<String>,
 }
 
@@ -69,10 +76,20 @@ impl Config {
             .collect()
     }
 
+    /// Checks that every configured scope path pattern is a valid regex.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error naming the scope and pattern that failed to compile.
     pub fn validate_scope_patterns(&self) -> Result<()> {
         self.compile_scope_patterns().map(|_| ())
     }
 
+    /// Checks that every configured ast-grep rule compiles.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a rule is invalid.
     #[cfg(feature = "ast-grep")]
     pub fn validate_ast_grep_rules(&self) -> Result<()> {
         self.compile_ast_grep_rules().map(|_| ())
@@ -107,8 +124,13 @@ impl Config {
     }
 }
 
-/// Stage all tracked modified/deleted files so that scope detection sees the
-/// full, entire diff when `--all` or `--add-all` is passed.
+/// Stages all tracked modified and deleted files so that scope detection sees
+/// the full diff when `--all` or `--add-all` is passed.
+///
+/// # Errors
+///
+/// Returns an error if the index cannot be read or written, or a changed file
+/// cannot be read.
 pub fn stage_tracked_changes(repo: &Repository) -> Result<()> {
     let workdir = repo
         .workdir()
@@ -123,7 +145,7 @@ pub fn stage_tracked_changes(repo: &Repository) -> Result<()> {
 
         match gix::index::fs::Metadata::from_path_no_follow(&full_path) {
             Err(_) => {
-                // File has left the worktree mark for removal.
+                // The file left the worktree, so mark it for removal.
                 entry.flags.insert(gix::index::entry::Flags::REMOVE);
             }
             Ok(meta) => {
@@ -154,6 +176,15 @@ pub fn stage_tracked_changes(repo: &Repository) -> Result<()> {
     Ok(())
 }
 
+/// Detects the scopes matched by the staged changes.
+///
+/// Path patterns are checked first, then ast-grep rules against the staged
+/// blob contents.
+///
+/// # Errors
+///
+/// Returns an error if the staged changes cannot be read or a pattern or rule
+/// is invalid.
 pub fn detect_scope_matches(repo: &Repository, config: &Config) -> Result<ScopeMatches> {
     let changed = staged_changes(repo)?;
     if changed.is_empty() {
@@ -270,10 +301,10 @@ fn detect_ast_grep_scopes(
 
         for rule in applicable_rules {
             let root = rule.language.ast_grep(source);
-            if root.root().find(&rule.matcher).is_some() {
-                if let Some(scope) = compiled_rules.ids_to_scope.get(&rule.id) {
-                    matched_scopes.insert(scope.clone());
-                }
+            if root.root().find(&rule.matcher).is_some()
+                && let Some(scope) = compiled_rules.ids_to_scope.get(&rule.id)
+            {
+                matched_scopes.insert(scope.clone());
             }
         }
     }
@@ -303,6 +334,17 @@ mod tests {
             allow_empty_scope: true,
             workdir,
         }
+    }
+
+    #[test]
+    fn test_suggested_requires_exactly_one_match() {
+        let matches = |names: &[&str]| ScopeMatches {
+            matches: names.iter().map(|name| name.to_string()).collect(),
+        };
+
+        assert_eq!(matches(&[]).suggested(), None);
+        assert_eq!(matches(&["core"]).suggested(), Some("core"));
+        assert_eq!(matches(&["core", "build"]).suggested(), None);
     }
 
     #[test]

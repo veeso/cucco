@@ -1,11 +1,25 @@
+//! Inspection of the git staging area.
+
 use anyhow::{Context, Result};
 use gix::Repository;
 
+/// State of the staging area relative to the working tree.
 #[derive(Debug, PartialEq, Eq)]
 pub enum StagingStatus {
+    /// Nothing is staged.
     Empty,
-    Partial { staged: usize, unstaged: usize },
-    Ready { staged: usize },
+    /// Some changes are staged, while other tracked files have unstaged changes.
+    Partial {
+        /// Number of staged changes.
+        staged: usize,
+        /// Number of tracked files with unstaged changes.
+        unstaged: usize,
+    },
+    /// Changes are staged and no tracked file has unstaged changes.
+    Ready {
+        /// Number of staged changes.
+        staged: usize,
+    },
 }
 
 /// Counts staged entries (HEAD tree vs index) and unstaged changes to tracked
@@ -50,6 +64,10 @@ fn count_changes(repo: &Repository) -> Result<(usize, usize)> {
 
 /// Compares HEAD tree vs index (staged) and index vs worktree (unstaged).
 /// Uses an empty tree as the baseline for initial commits.
+///
+/// # Errors
+///
+/// Returns an error if the index, HEAD, or worktree status cannot be read.
 pub fn check_staging(repo: &Repository) -> Result<StagingStatus> {
     match count_changes(repo)? {
         (0, _) => Ok(StagingStatus::Empty),
@@ -66,6 +84,10 @@ pub fn check_staging(repo: &Repository) -> Result<StagingStatus> {
 /// Returns `true` when at least one change is already staged or at least one
 /// tracked file is modified or deleted in the worktree. Untracked files do not
 /// count, matching `git commit -a`.
+///
+/// # Errors
+///
+/// Returns an error if the index, HEAD, or worktree status cannot be read.
 pub fn has_tracked_changes(repo: &Repository) -> Result<bool> {
     let (staged, unstaged) = count_changes(repo)?;
     Ok(staged > 0 || unstaged > 0)
@@ -92,6 +114,40 @@ mod tests {
             repo.commit(Some("HEAD"), &sig, &sig, "chore: initial", &tree, &[])?;
         }
         Ok(repo)
+    }
+
+    #[test]
+    fn test_check_staging_reports_empty_ready_and_partial() -> Result<(), Box<dyn Error>> {
+        let tempdir = tempfile::tempdir()?;
+        let repo = init_repo_with_commit(tempdir.path())?;
+
+        let gix_repo = gix::discover(tempdir.path())?;
+        assert_eq!(check_staging(&gix_repo)?, StagingStatus::Empty);
+
+        std::fs::write(tempdir.path().join("staged.txt"), "s")?;
+        let mut index = repo.index()?;
+        index.add_path(Path::new("staged.txt"))?;
+        index.write()?;
+
+        let gix_repo = gix::discover(tempdir.path())?;
+        assert_eq!(
+            check_staging(&gix_repo)?,
+            StagingStatus::Ready { staged: 1 }
+        );
+
+        std::fs::write(tempdir.path().join("tracked.txt"), "version two")?;
+
+        let gix_repo = gix::discover(tempdir.path())?;
+        assert_eq!(
+            check_staging(&gix_repo)?,
+            StagingStatus::Partial {
+                staged: 1,
+                unstaged: 1
+            }
+        );
+
+        tempdir.close()?;
+        Ok(())
     }
 
     #[test]

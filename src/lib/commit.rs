@@ -1,3 +1,5 @@
+//! Commit message generation, staging, and commit creation with git hooks.
+
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -8,7 +10,11 @@ use cocogitto::{CocoGitto, CommitHook};
 use gix::Repository;
 use gix::bstr::{BString, ByteSlice};
 
-/// Generates the commit message
+/// Generates the conventional commit message.
+///
+/// # Errors
+///
+/// Returns an error if cocogitto rejects the message parts.
 pub fn generate_commit_msg(
     commit_type: String,
     scope: Option<String>,
@@ -28,7 +34,12 @@ pub fn generate_commit_msg(
     Ok(message)
 }
 
-/// Output a commit message to `.git/COMMIT_EDITMSG`
+/// Writes the commit message to `COMMIT_EDITMSG` in the git directory.
+///
+/// # Errors
+///
+/// Returns an error if the message cannot be generated or the file cannot be
+/// written.
 pub fn write_commit_msg(
     repo: &Repository,
     commit_type: String,
@@ -47,7 +58,7 @@ pub fn write_commit_msg(
     Ok(())
 }
 
-/// Create a commit
+/// Creates a commit.
 ///
 /// Staging is always performed by cucco (never delegated to cocogitto) so that
 /// the same set of files is staged regardless of whether `no_verify` is set.
@@ -63,6 +74,11 @@ pub fn write_commit_msg(
 /// When `no_verify` is `false`, the `pre-commit` and `post-commit` git hooks
 /// are invoked around the commit. `post-commit` failures are reported as a
 /// warning and do not abort, matching `git commit`.
+///
+/// # Errors
+///
+/// Returns an error if staging fails, the `pre-commit` hook fails, or the
+/// commit cannot be created.
 pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool) -> Result<()> {
     // Set config path before creating CocoGitto instance (required in 6.4.0+)
     let config_path = current_dir.join("cog.toml");
@@ -86,10 +102,8 @@ pub fn commit(current_dir: PathBuf, mut options: CommitOptions, no_verify: bool)
 
     cocogitto.conventional_commit(options)?;
 
-    if !no_verify {
-        if let Err(e) = cocogitto.run_commit_hook(CommitHook::PostCommit) {
-            eprintln!("warning: post-commit hook failed: {e}");
-        }
+    if !no_verify && let Err(e) = cocogitto.run_commit_hook(CommitHook::PostCommit) {
+        eprintln!("warning: post-commit hook failed: {e}");
     }
 
     Ok(())
@@ -280,4 +294,43 @@ fn is_executable(path: &std::path::Path) -> Result<bool> {
 #[cfg(not(unix))]
 fn is_executable(_path: &std::path::Path) -> Result<bool> {
     Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_commit_msg() {
+        let message = generate_commit_msg(
+            "feat".into(),
+            Some("space".into()),
+            "add more space".into(),
+            Some("body".into()),
+            true,
+        )
+        .unwrap();
+
+        assert_eq!(message, "feat(space)!: add more space\n\nbody");
+    }
+
+    #[test]
+    fn test_generate_commit_msg_minimal() {
+        let message =
+            generate_commit_msg("fix".into(), None, "patch it".into(), None, false).unwrap();
+
+        assert_eq!(message, "fix: patch it");
+    }
+
+    #[test]
+    fn test_write_commit_msg() {
+        let tempdir = tempfile::tempdir().unwrap();
+        gix::init(tempdir.path()).unwrap();
+        let repo = gix::discover(tempdir.path()).unwrap();
+
+        write_commit_msg(&repo, "fix".into(), None, "patch it".into(), None, false).unwrap();
+
+        let written = std::fs::read_to_string(repo.path().join("COMMIT_EDITMSG")).unwrap();
+        assert_eq!(written, "fix: patch it");
+    }
 }

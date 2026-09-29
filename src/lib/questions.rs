@@ -1,3 +1,5 @@
+//! Interactive prompts and scope autocompletion.
+
 use anyhow::{Context, Result};
 use conventional_commit_parser::parse_summary;
 use gix::bstr::ByteSlice;
@@ -66,6 +68,13 @@ fn get_skip_hint() -> &'static str {
     "<esc> or <return> to skip"
 }
 
+fn multiline_help() -> String {
+    format!(
+        "Use <alt+enter> for newlines, {skip_hint}",
+        skip_hint = get_skip_hint()
+    )
+}
+
 /// Print a prompt line as if the user had already answered it, so a
 /// pre-assigned scope from ast-grep/pattern matching is still visible
 /// instead of silently skipping the prompt.
@@ -114,9 +123,10 @@ fn format_commit_type_choice(
 }
 
 fn validate_summary(input: &str) -> Result<Validation, CustomUserError> {
-    match input.trim().is_empty() {
-        false => Ok(Validation::Valid),
-        true => Ok(Validation::Invalid("A summary is required".into())),
+    if input.trim().is_empty() {
+        Ok(Validation::Invalid("A summary is required".into()))
+    } else {
+        Ok(Validation::Valid)
     }
 }
 
@@ -144,8 +154,10 @@ fn prompt_type(config: &Config) -> Result<String> {
     Ok(transform_commit_type_choice(&selected_type))
 }
 
+/// Autocompletes scopes from the configuration and the commit history.
 #[derive(Debug, Clone)]
 pub struct ScopeAutocompleter {
+    /// Configuration providing the configured scopes and the repository path.
     pub config: Config,
 }
 
@@ -175,12 +187,11 @@ impl ScopeAutocompleter {
             let summary = message.summary();
 
             // Parse the summary - ignore errors for invalid commit messages
-            if let Ok(parsed) = parse_summary(summary.to_str()?) {
-                if let Some(scope) = parsed.scope {
-                    if !scopes.contains(&scope) {
-                        scopes.push(scope);
-                    }
-                }
+            if let Ok(parsed) = parse_summary(summary.to_str()?)
+                && let Some(scope) = parsed.scope
+                && !scopes.contains(&scope)
+            {
+                scopes.push(scope);
             }
         }
 
@@ -206,7 +217,7 @@ impl ScopeAutocompleter {
         suggestions
     }
 
-    /// Every known scope name, config and history, without descriptions.
+    /// Returns every known scope name from config and history, without descriptions.
     pub fn get_all_scopes(&self) -> Vec<String> {
         self.get_suggestions_with_descriptions()
             .iter()
@@ -237,7 +248,7 @@ impl Autocomplete for ScopeAutocompleter {
 /// Render a scope as `name: description`, or just `name` when it has no description.
 fn format_scope_display(scope: &crate::config::CommitScope) -> String {
     match &scope.description {
-        Some(desc) => format!("{}: {}", scope.name, desc),
+        Some(description) => format!("{name}: {description}", name = scope.name),
         None => scope.name.clone(),
     }
 }
@@ -381,7 +392,7 @@ fn prompt_summary(msg: String) -> Result<String> {
 }
 
 fn prompt_body() -> Result<Option<String>> {
-    let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
+    let help_message = multiline_help();
     let _keyboard_enhancement = KeyboardEnhancement::enable()?;
 
     match MultilineText::new(
@@ -408,7 +419,7 @@ fn prompt_breaking() -> Result<bool> {
 }
 
 fn prompt_breaking_text() -> Result<Option<String>> {
-    let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
+    let help_message = multiline_help();
     let _keyboard_enhancement = KeyboardEnhancement::enable()?;
 
     match MultilineText::new(
@@ -445,18 +456,30 @@ fn prompt_issue_text() -> Result<String> {
     Ok(summary)
 }
 
+/// Answers collected by the interactive prompts.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Answers {
+    /// Selected commit type name.
     pub commit_type: String,
+    /// Chosen scope, if any.
     pub scope: Option<String>,
+    /// Short description of the change.
     pub summary: String,
+    /// Longer description of the change, if any.
     pub body: Option<String>,
+    /// Issue reference to add as a footer, if any.
     pub issue_footer: Option<String>,
+    /// Whether the change is breaking.
     pub is_breaking_change: bool,
+    /// Description of the breaking change, if any.
     pub breaking_change_footer: Option<String>,
 }
 
-/// Create the interactive prompt
+/// Runs the interactive prompts and collects the answers.
+///
+/// # Errors
+///
+/// Returns an error if the user cancels a prompt or the terminal fails.
 pub fn create_prompt(
     last_message: String,
     config: &Config,
@@ -492,7 +515,11 @@ pub fn create_prompt(
     })
 }
 
-/// Prompt the user to confirm the commit
+/// Asks the user to confirm the commit.
+///
+/// # Errors
+///
+/// Returns an error if the user cancels the prompt or the terminal fails.
 pub fn prompt_confirm() -> Result<bool> {
     let answer = Confirm::new("Proceed with this commit?")
         .with_render_config(get_render_config())

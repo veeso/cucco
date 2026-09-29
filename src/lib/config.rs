@@ -1,3 +1,5 @@
+//! Layered configuration loaded from defaults, config files, and CLI overrides.
+
 use std::env::current_dir;
 use std::fmt;
 use std::path::PathBuf;
@@ -10,24 +12,39 @@ use serde::Deserialize;
 #[cfg(any(unix, target_os = "redox"))]
 use xdg::BaseDirectories;
 
+/// Resolved cucco configuration.
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// Whether the scope prompt autocompletes from commit history.
     pub autocomplete: bool,
+    /// Whether to ask about breaking changes.
     pub breaking_changes: bool,
+    /// Available commit types, keyed by name.
     pub commit_types: IndexMap<String, CommitType>,
+    /// Configured commit scopes, keyed by name.
     pub commit_scopes: IndexMap<String, CommitScope>,
+    /// Whether to prepend the type emoji to the summary.
     pub emoji: bool,
+    /// Whether to ask about related issues.
     pub issues: bool,
+    /// Whether to sign the commit.
     pub sign: bool,
+    /// Whether the scope must be picked from `commit_scopes`.
     pub force_config_scopes: bool,
+    /// Whether the scope may be left empty.
     pub allow_empty_scope: bool,
+    /// Directory cucco was started in.
     pub workdir: PathBuf,
 }
 
+/// A commit type such as `feat` or `fix`.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct CommitType {
+    /// Human-readable description shown in the type prompt.
     pub description: String,
+    /// Emoji prepended to the summary when emoji are enabled.
     pub emoji: Option<String>,
+    /// Type name written in the commit message.
     pub name: String,
 }
 
@@ -35,7 +52,9 @@ pub struct CommitType {
 /// for automatic scope detection from staged changes.
 #[derive(Clone, Deserialize)]
 pub struct CommitScope {
+    /// Scope name written in the commit message.
     pub name: String,
+    /// Human-readable description shown in the scope prompt.
     pub description: Option<String>,
 
     /// Regex patterns matched against staged file paths (prefixed with `/`).
@@ -81,35 +100,51 @@ where
 
 #[derive(Clone, Debug, Deserialize)]
 struct ConfigTOML {
-    pub autocomplete: bool,
-    pub breaking_changes: bool,
+    autocomplete: bool,
+    breaking_changes: bool,
     #[serde(default)]
     commit_types: Vec<CommitType>,
     #[serde(default)]
     commit_scopes: Vec<CommitScope>,
-    pub emoji: bool,
-    pub issues: bool,
-    pub sign: bool,
-    pub force_config_scopes: bool,
-    pub allow_empty_scope: bool,
+    emoji: bool,
+    issues: bool,
+    sign: bool,
+    force_config_scopes: bool,
+    allow_empty_scope: bool,
 }
 
+/// Overrides applied on top of the config files, and where to look for them.
 #[derive(Debug, Default)]
 pub struct ConfigArgs {
+    /// Extra config file, read last among the files.
     pub path: Option<PathBuf>,
+    /// Overrides `autocomplete`.
     pub autocomplete: Option<bool>,
+    /// Overrides `breaking_changes`.
     pub breaking_changes: Option<bool>,
+    /// Overrides `emoji`.
     pub emoji: Option<bool>,
+    /// Overrides `issues`.
     pub issues: Option<bool>,
+    /// Overrides `sign`.
     pub sign: Option<bool>,
+    /// Overrides `force_config_scopes`.
     pub force_scope: Option<bool>,
+    /// Overrides `allow_empty_scope`.
     pub allow_empty_scope: Option<bool>,
+    /// Extra directory searched for `cucco/config.toml`, meant for tests.
     pub _user_config_path: Option<PathBuf>,
+    /// Working directory to use instead of the process one.
     pub _current_dir: Option<PathBuf>,
 }
 
 impl Config {
-    /// Find a config and load it
+    /// Finds the config files, merges them, and applies the overrides in `args`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the working directory cannot be determined, a config
+    /// file is malformed, or a scope pattern or ast-grep rule is invalid.
     pub fn new(args: Option<ConfigArgs>) -> Result<Self> {
         let ConfigArgs {
             path,
@@ -126,7 +161,10 @@ impl Config {
 
         let mut settings = config::Config::builder();
 
-        let workdir = _current_dir.unwrap_or(current_dir()?);
+        let workdir = match _current_dir {
+            Some(dir) => dir,
+            None => current_dir()?,
+        };
 
         // Get the default config
         let default_str = include_str!("../../meta/config/default.toml");
@@ -149,7 +187,7 @@ impl Config {
         let working_dir_path = workdir.join(".cucco.toml");
         settings = settings.add_source(config::File::from(working_dir_path).required(false));
 
-        // Try to get config from passed directory
+        // Try to get config from the file passed with --config
         if let Some(path) = path {
             settings = settings.add_source(config::File::from(path).required(false));
         }
@@ -311,7 +349,7 @@ mod tests {
         }));
 
         assert!(config.is_ok());
-        assert!(!config?.commit_types.len() > 0);
+        assert!(!config?.commit_types.is_empty());
 
         tempdir.close()?;
 
