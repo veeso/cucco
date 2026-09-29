@@ -55,8 +55,12 @@ Never request build or test parallelism above eight from the CLI.
 - **Tests.** Unit tests live next to the code. `tests/integration.rs` drives
   the binary through a PTY with `rexpect` on Unix and with `assert_cmd`
   everywhere; hook tests install real hook scripts into `.git/hooks`.
-- **Three gates run the same recipes.** `just check` locally,
-  `.githooks/pre-commit` on commit, and `.github/workflows/ci.yml` in CI.
+- **Three gates share recipes, not the full set.** `just check` runs
+  `fmt_check`, `clippy`, `doc`, `deny`, and `test`. `.githooks/pre-commit`
+  runs a secret scan, `fmt_check`, `clippy`, and `deny`.
+  `.github/workflows/ci.yml` runs `build`, `test`, `lint`, `coverage`, `doc`,
+  and `deny`. Workflow linting (`zizmor`, `actionlint`) and `shellcheck` run
+  outside `just check`.
 - **Release path.** `.github/workflows/release.yml` is `workflow_dispatch`
   only; `dist/release/` holds the version bump and static musl build scripts;
   `install.sh`/`install.ps1` are served from GitHub Pages by
