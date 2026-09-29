@@ -1,4 +1,6 @@
-use anyhow::Result;
+//! Turns raw prompt answers into the parts of a conventional commit.
+
+use anyhow::{Context, Result};
 use indexmap::IndexMap;
 
 use crate::config::CommitType;
@@ -12,14 +14,14 @@ fn get_summary(
     commit_type: &str,
     commit_types: &IndexMap<String, CommitType>,
 ) -> Result<String> {
-    let commit_type = commit_types.get(commit_type).unwrap();
-    let use_emoji = use_emoji && commit_type.emoji.is_some();
+    let commit_type = commit_types
+        .get(commit_type)
+        .with_context(|| format!("unknown commit type `{commit_type}`"))?;
     let summary = answer.replace_emoji_shortcodes();
 
-    if use_emoji {
-        Ok(format!("{} {summary}", commit_type.emoji.as_ref().unwrap()))
-    } else {
-        Ok(summary)
+    match (use_emoji, &commit_type.emoji) {
+        (true, Some(emoji)) => Ok(format!("{emoji} {summary}")),
+        _ => Ok(summary),
     }
 }
 
@@ -54,17 +56,26 @@ fn get_amended_body(
     body.map(|b| b.replace_emoji_shortcodes())
 }
 
+/// Prompt answers in the shape needed to create a commit.
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExtractedAnswers {
+    /// Commit body, amended with the issue reference and breaking change footer.
     pub body: Option<String>,
+    /// Commit type name, such as `feat`.
     pub commit_type: String,
+    /// Whether the commit is marked as a breaking change.
     pub is_breaking_change: bool,
+    /// Commit scope, if any.
     pub scope: Option<String>,
+    /// Commit summary, with the type emoji prepended when enabled.
     pub summary: String,
 }
 
-/// Extract the prompt answers into an `ExtractedAnswers`,
-/// making it usable for creating a commit
+/// Extracts the prompt answers into an [`ExtractedAnswers`].
+///
+/// # Errors
+///
+/// Returns an error if the answered commit type is not in `commit_types`.
 pub fn get_extracted_answers(
     answers: Answers,
     emoji: bool,
@@ -159,6 +170,15 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_get_summary_with_unknown_type_errors() {
+        let commit_types = indexmap! {};
+
+        let error = get_summary("summary", false, "nope", &commit_types).unwrap_err();
+
+        assert!(error.to_string().contains("nope"));
     }
 
     #[test]

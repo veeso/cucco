@@ -193,7 +193,7 @@ Config values are prioritized in the following order:
 autocomplete = true
 ```
 
-#### `breaking-changes`
+#### `breaking_changes`
 
 - Type: `bool`
 - Optional: `true`
@@ -203,7 +203,7 @@ autocomplete = true
 breaking_changes = true
 ```
 
-#### `commit-types`
+#### `commit_types`
 
 - Type: `Vec<CommitType>`
 - Optional: `true`
@@ -234,6 +234,16 @@ emoji = true
 
 ```toml
 issues = true
+```
+
+#### `sign`
+
+- Type: `bool`
+- Optional: `true`
+- Description: Sign the commit using the user's GPG key, if one is configured.
+
+```toml
+sign = true
 ```
 
 #### `force_config_scopes`

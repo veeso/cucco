@@ -1,4 +1,8 @@
+//! Emoji shortcode replacement for commit text.
+
+/// Replaces emoji shortcodes such as `:tada:` with the emoji they name.
 pub trait ReplaceEmoji {
+    /// Returns a copy of the text with every known `:shortcode:` replaced.
     fn replace_emoji_shortcodes(&self) -> String;
 }
 

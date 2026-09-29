@@ -8,7 +8,7 @@ cucco is an interactive CLI for creating conventional commits. It is a fork of
 [koji](https://github.com/cococonscious/koji) that adds git hooks execution.
 One Cargo package with a library (`src/lib/`) and a binary (`src/bin/main.rs`).
 
-The toolchain is pinned to Rust 1.98.1 with edition 2021. Keep
+The toolchain is pinned to Rust 1.98.1 with edition 2024. Keep
 `rust-toolchain.toml` and `package.rust-version` in `Cargo.toml` synchronized.
 
 ## Working rules
@@ -37,6 +37,8 @@ The toolchain is pinned to Rust 1.98.1 with edition 2021. Keep
 - `src/lib/config.rs`: layered configuration (`.cucco.toml`,
   `cucco/config.toml`, defaults embedded from `meta/config/default.toml`).
 - `src/lib/emoji.rs`: emoji and shortcode handling.
+- `src/lib/multiline.rs`: crate-private multi-line text prompt used for the
+  body and breaking change prompts.
 - `src/lib/questions.rs`: inquire prompts and scope autocompletion.
 - `src/lib/scope.rs`: scope detection from staged paths and ast-grep rules.
 - `src/lib/status.rs`: staging area inspection.
