@@ -71,6 +71,7 @@ trait ExpectPromps {
     fn expect_body(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_breaking(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_breaking_details(&mut self) -> Result<String, rexpect::error::Error>;
+    fn expect_multiline_end(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_issues(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_issues_details(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_confirm(&mut self) -> Result<String, rexpect::error::Error>;
@@ -91,15 +92,22 @@ impl ExpectPromps for PtySession {
     }
 
     fn expect_body(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[>1u")?;
         self.exp_string("longer description of the change")
     }
 
     fn expect_breaking(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[<1u")?;
         self.exp_string("breaking changes?")
     }
 
     fn expect_breaking_details(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[>1u")?;
         self.exp_string("in detail:")
+    }
+
+    fn expect_multiline_end(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[<1u")
     }
 
     fn expect_issues(&mut self) -> Result<String, rexpect::error::Error> {
@@ -149,7 +157,7 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     process.flush()?;
     process.expect_body()?;
     process.send("Removed and added a config pair each")?;
-    process.send("\x1b\r")?;
+    process.send("\x1b[13;3u")?;
     process.send_line("Necessary for future compatibility.")?;
     process.flush()?;
     process.expect_breaking()?;
@@ -160,6 +168,7 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     process.send("\x1b\r")?;
     process.send_line("The old configuration is no longer supported.")?;
     process.flush()?;
+    process.expect_multiline_end()?;
     process.expect_issues()?;
     process.send_line("Y")?;
     process.flush()?;
@@ -411,6 +420,7 @@ fn test_empty_breaking_text_correct() -> Result<(), Box<dyn Error>> {
     // `^[` is the same as <esc>
     process.send_control('[')?;
     process.flush()?;
+    process.expect_multiline_end()?;
     process.expect_issues()?;
     process.send_line("N")?;
     process.flush()?;

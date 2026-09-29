@@ -20,6 +20,36 @@ enum PromptError {
     Inquire(InquireError),
 }
 
+#[derive(Debug)]
+struct KeyboardEnhancement;
+
+impl KeyboardEnhancement {
+    fn enable() -> Result<Self> {
+        #[cfg(unix)]
+        {
+            use crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
+
+            crossterm::execute!(
+                std::io::stderr(),
+                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+            )?;
+        }
+
+        Ok(Self)
+    }
+}
+
+impl Drop for KeyboardEnhancement {
+    fn drop(&mut self) {
+        #[cfg(unix)]
+        {
+            use crossterm::event::PopKeyboardEnhancementFlags;
+
+            _ = crossterm::execute!(std::io::stderr(), PopKeyboardEnhancementFlags);
+        }
+    }
+}
+
 impl PromptError {
     fn from_inquire(e: InquireError, prompt_name: &'static str) -> Self {
         match e {
@@ -351,6 +381,7 @@ fn prompt_summary(msg: String) -> Result<String> {
 
 fn prompt_body() -> Result<Option<String>> {
     let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
+    let _keyboard_enhancement = KeyboardEnhancement::enable()?;
 
     match Text::new("Provide a longer description of the change:")
         .with_render_config(get_render_config())
@@ -376,6 +407,7 @@ fn prompt_breaking() -> Result<bool> {
 
 fn prompt_breaking_text() -> Result<Option<String>> {
     let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
+    let _keyboard_enhancement = KeyboardEnhancement::enable()?;
 
     match Text::new("Describe the breaking changes in detail:")
         .with_render_config(get_render_config())
