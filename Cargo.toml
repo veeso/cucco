@@ -1,6 +1,6 @@
 [package]
 name = "cucco"
-version = "3.4.0"
+version = "4.0.0"
 authors = [
   "Christian Visintin <christian.visintin@veeso.dev>",
   "Finley Thomalla <finley@thomalla.ch>",

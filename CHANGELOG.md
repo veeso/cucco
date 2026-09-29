@@ -1,474 +1,1010 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
+All notable changes to this project are documented in this file.
 
----
 
-## [3.4.0](https://github.com/cococonscious/koji/compare/v3.3.1...v3.4.0) (2026-02-25)
+## 4.0.0
 
-### Features
+Released on 2026-09-29
 
-- confirmation prompt ([#181](https://github.com/cococonscious/koji/issues/181)) ([d7dc724](https://github.com/cococonscious/koji/commit/d7dc724dc7e89cf71ac47c41312a4aae9b095616))
-- replace git2 with gix ([#174](https://github.com/cococonscious/koji/issues/174)) ([8679795](https://github.com/cococonscious/koji/commit/8679795d741c38ae9a0526bd0b22473916e38e9e))
-- staging area warn and error ([#182](https://github.com/cococonscious/koji/issues/182)) ([c449b04](https://github.com/cococonscious/koji/commit/c449b04f208612617b4edab6056395fb97a1b8a9)), closes [#126](https://github.com/cococonscious/koji/issues/126)
+### Breaking changes
+- add ability to skip breaking changes and issues questions
+> add ability to skip breaking changes and issues questions
+- stage files, better args, deps (#102)
+> Removed short argument alias of breaking_changes,
+autocomplete, emoji, and issues.
+- rename project to cucco
+> .koji.toml and koji/config.toml are no longer read; rename them to .cucco.toml and cucco/config.toml.
+- migrate koji fork to cucco (#1)
+> .koji.toml and koji/config.toml are no longer read; rename them to .cucco.toml and cucco/config.toml.
 
-### Bug Fixes
+* docs(license): add fork copyright notice
 
-- **deps:** update all non-major dependencies ([#169](https://github.com/cococonscious/koji/issues/169)) ([8da82c4](https://github.com/cococonscious/koji/commit/8da82c4ed5c9a646bfb321c3041c19d3db8e0cd5))
-- **deps:** update rust crate gix to 0.80.0 ([#180](https://github.com/cococonscious/koji/issues/180)) ([aa09507](https://github.com/cococonscious/koji/commit/aa0950705ef6354b27df747a06f86f0ae0b67433))
-- **deps:** update rust crate inquire to v0.9.4 ([#171](https://github.com/cococonscious/koji/issues/171)) ([fbdb9eb](https://github.com/cococonscious/koji/commit/fbdb9ebad04969c013fbca44d293bbcfc17d8100))
+Keep the original koji copyright lines and add the cucco maintainer as a further copyright holder under the same MIT license.
 
-### Sponsors
+* build: adopt just, dprint, cargo-deny and git-cliff tooling
 
-Thanks a lot to [veeso](https://github.com/veeso) for sponsoring this release!
+Replace the pre-commit framework with a tracked git hook, pin the toolchain to 1.98.1, add the dependency policy, changelog template and command layer used across veeso projects, and turn on the shared rustc lints.
 
-## [3.3.1](https://github.com/cococonscious/koji/compare/v3.3.0...v3.3.1) - 2025-11-30
+* style: format the tree with dprint and nightly rustfmt
 
-### Fixed
+* docs: add agent guidance, AI policy and contribution templates
 
-- xdg crate not supporting windows ([#159](https://github.com/cococonscious/koji/pull/159))
+Import AI_POLICY.md and the pull request template, add AGENTS.md, CLAUDE.md, CONTRIBUTING.md, the funding file and veeso-style issue templates.
 
-## [3.3.0](https://github.com/cococonscious/koji/compare/v3.2.0...v3.3.0) - 2025-11-30
+* ci: replace koji pipelines with veeso workflows
 
-### Changed
+Drop release-please, tarpaulin, codecov and actionlint-as-a-job in favour of the CI, TruffleHog and zizmor workflows shared across veeso projects. Coverage is produced by cargo-llvm-cov and uploaded to Coveralls.
 
-- _(deps)_ update codecov/codecov-action action to v5.5.1 ([#143](https://github.com/cococonscious/koji/pull/143))
-- _(deps)_ upgrade all dependencies ([#149](https://github.com/cococonscious/koji/pull/149))
-- _(build)_ reintroduce musl builds ([#156](https://github.com/cococonscious/koji/pull/156))
-- replace rusty-hook with prek
-- _(config)_ allow reading configuration from xdg directories ([#155](https://github.com/cococonscious/koji/pull/155))
-- update all non-major dependencies ([#136](https://github.com/cococonscious/koji/pull/136))
-- _(deps)_ update codecov/codecov-action action to v5.3.1 ([#135](https://github.com/cococonscious/koji/pull/135))
+* ci(release): add release workflow with static binaries, installers and homebrew tap
 
-## [3.2.0](https://github.com/cococonscious/koji/compare/v3.1.0...v3.2.0) - 2025-01-21
+A workflow_dispatch release bumps the version, regenerates the changelog with git-cliff, builds static musl, macOS and Windows binaries, creates the GitHub release with SHA-256 checksums and installer scripts, publishes to crates.io through trusted publishing and rewrites the formula in veeso/homebrew-cucco. GitHub Pages serves install.sh and install.ps1.
 
-### Added
-
-- _(args)_ adding 'stdout' flag (#129)
-
-### Changed
-
-- _(deps)_ update rust crate dirs to v6 (#132)
-- update all non-major dependencies (#130)
-
-## [3.1.0](https://github.com/cococonscious/koji/compare/v3.0.0...v3.1.0) - 2025-01-06
+* chore: remove renovate
+- make -a stage tracked changes only and add -A to stage everything (#2)
+> -a/--all no longer stages untracked files. Use -A/--add-all to stage them.
 
 ### Added
 
+
+- initial commit
+- add validation to questions
+- add support for commit types with no emoji
+- allow passing path to a config file
+- add option to run as git hook
+> this writes the commit message to COMMIT_EDITMSG instead of creating a commit
+- add optional autocomplete for scope prompt
+- add support for emoji shortcodes
+- use message passed in via -m flag
+- return early if commit message is already conventional
+- **config:** better config handling
+> - use standard config locations (closes #49)
+> - add options for emoji and autocomplete in config file (closes #50)
+- finish cleaning up config
+- Breaking: add ability to skip breaking changes and issues questions
+- allow signing commits
+- type filtering, multi-line body support (#99)
+> Switches requestty with inquire, which is still active and supports
+> filtering by typing out of the box.
+> Pinned cocogitto more precisely to prevent lower versions and updated
+> all locked dependencies.
+> Allow adding line breaks in the body with '\n'.
+- breaking change footers (#101)
+> Adds a prompt, and the functionality, for adding a breaking change
+> footer describing the breaking changes in detail, as described in the
+> Conventional Commits specification. I decided against using a dash (-)
+> between "BREAKING" and "CHANGE" as I fear that not every tool supports
+> it, but it may be configurable in the future.
+> Also fixes the hint of the commit body prompt having a double comma.
+- Breaking: stage files, better args, deps (#102)
+> Adds a new command argument "--all|-a" with the same functionality as
+> git's "commit -a". Revamped the arguments a little, changing the short
+> aliases to avoid misunderstandings with git's equivalents and upgraded
+> the Cargo dependencies.
+- add shell completions subcommand (#106)
+> Adds a subcommand "completions" which can generate shell completions for
+> a few supported shells, namely bash, zsh and Nushell.
+> You can use it like this: `koji completions <SHELL> >
+> <CUSTOM_COMPLETIONS_DIR>/_koji`.
+> I consider this feature necessary for eventually publishing koji to
+> other package registries, such as the AUR.
 - git-like -C argument, integration tests (#103)
+> Added an argument almost equivalent to Git's "-C", mainly for the
+> purpose of making integration tests isolated. This feature depends on
+> cocogitto/cocogitto#428, and therefore v6.2.0, as the commit will
+> otherwise still be made in the current working directory.
+> This commit reduces code test coverage as many skips were removed.
+- **args:** adding 'stdout' flag (#129)
+> Added a '--stdout' flag to output the message to stdout instead of
+> continuing on with the git workflow. Allows koji to be used with non-git
+> workflows.
+- **config:** allow reading configuration from xdg directories (#155)
+> On MacOS the "default" configuration directories do not follow the XDG
+> standards.
+> This change allows the use of those standards on a mac if the
+> environment variable for XDG_CONFIG_HOME has been set.
+- replace git2 with gix (#174)
+> Keeping cocogitto for the commits for now but uses Gix for traversal, etc., and at some point, when Gix is ready, replace cocogitto with it.
+- staging area warn and error (#182)
+> Warns when not all files in the index have been added to the staging
+> area and throws and error if no files have been added.
+- confirmation prompt (#181)
+> Always prints out the built commit message and prompts for confirmation,
+> unless --stdout or --yes is passed
+> 
+> Resolves one of the suggested improvements in #128
+- configurable scopes with semantic matching (#179)
+> In this PR I added scope configuration, which allows you to assign rules
+> for the scopes to be added when you use koji, under specific rules.
+> 
+> The ruleset is simple:
+> - Either you regex match over the files in the change.
+> - Or you more creatively setup an
+> [ast-grep](https://ast-grep.github.io/) match, where you can configure
+> based on the patterns in your code (example, a test-case change.)
+- **commit:** run pre-commit and post-commit hooks
+> Wraps the cocogitto commit with `pre-commit` and `post-commit` git
+> hooks, matching `git commit` behavior. A failing `pre-commit` hook
+> aborts the commit; a failing `post-commit` hook is reported as a
+> warning and does not abort, matching `git commit`.
+> 
+> Staging is always performed by koji (via gix) regardless of whether
+> hooks are enabled, so `--all` and `--all --no-verify` produce the
+> same staged set: tracked modified/deleted files only, matching the
+> documented `--all` flag and `git commit -a` semantics. Cocogitto's
+> own staging is bypassed.
+> 
+> Adds `--no-verify` to skip both hooks (conflicts with `--hook`).
+- **commit:** merge git hooks support from feat/git-hooks
+> Run the repository pre-commit and post-commit hooks around the commit, add --no-verify to bypass them, and make --all stage every change like git add -A.
+- Breaking: rename project to cucco
+> The crate, binary and library are now named cucco. The project config file is .cucco.toml and the user config lives under cucco/config.toml.
+- Breaking: migrate koji fork to cucco (#1)
+> * feat(commit): run pre-commit and post-commit hooks
+> 
+> Wraps the cocogitto commit with `pre-commit` and `post-commit` git
+> hooks, matching `git commit` behavior. A failing `pre-commit` hook
+> aborts the commit; a failing `post-commit` hook is reported as a
+> warning and does not abort, matching `git commit`.
+> 
+> Staging is always performed by koji (via gix) regardless of whether
+> hooks are enabled, so `--all` and `--all --no-verify` produce the
+> same staged set: tracked modified/deleted files only, matching the
+> documented `--all` flag and `git commit -a` semantics. Cocogitto's
+> own staging is bypassed.
+> 
+> Adds `--no-verify` to skip both hooks (conflicts with `--hook`).
+> 
+> * fix(commit): refresh stat and invalidate TREE cache when staging via gix
+> 
+> `stage_tracked` updates index entries' blob ids in-place but left two
+> gix-index pieces stale, which manifested only when cocogitto (libgit2)
+> wrote the commit afterwards:
+> 
+> - The TREE extension still pointed at the pre-edit root tree, so
+>   libgit2's `index.write_tree()` returned the cached old tree id —
+>   producing a commit whose tree equals its parent's (empty diff).
+> - The entry `stat` (mtime/size/ino) was not refreshed from disk, so
+>   `git status` reported the file as modified after commit even though
+>   index, HEAD and worktree blobs all matched.
+> 
+> Drop the TREE extension and rewrite `entry.stat` from the worktree
+> file's metadata before writing the index.
+> 
+> * fix(commit): make --all match git add -A and handle missing index
+> 
+> Stage untracked files (matching documented `git add -A` semantics) and
+> gracefully open `.git/index` via `at_or_default` so `koji -a` works in
+> a fresh repo before any commit exists.
+> 
+> * feat!: rename project to cucco
+> 
+> The crate, binary and library are now named cucco. The project config file is .cucco.toml and the user config lives under cucco/config.toml.
+- Breaking: make -a stage tracked changes only and add -A to stage everything (#2)
+> The -a/--all flag used to stage every change, untracked files included, which does not match git. It now stages modified and deleted tracked files only, like git commit -a, and fails early when there is no tracked change to commit. The new -A/--add-all flag stages every change, untracked files included, like git add -A. The two flags are mutually exclusive and both conflict with --hook and --stdout.
+- support multiline commit descriptions (#3)
+> * feat: support multiline commit descriptions
+> 
+> Enable inquire's Alt+Enter multiline input for commit bodies and breaking-change details. Preserve literal backslash-n text and document the new prompt behavior.
+> 
+> * fix: enable reliable alt-enter multiline input
+> 
+> * fix: fix multiline
 
 ### Changed
 
-- _(deps)_ update codecov/codecov-action action to v5.1.2 (#123, #116)
-- _(deps)_ update all non-major dependencies (#122, #112)
-- _(deps)_ update rust crate serde to v1.0.216 (#119)
-- _(deps)_ update actions/cache action to v4.2.0 (#113)
+
+- put config file handling into its own file
+- little bit of some cleanup
+- remove unnecessary `Error`s from `Result`s
+- clean up render_commit_type_choice
+- clean up get_amended_body
+- replace config loading with a single load_config function
+- use const strings for answer keys
+- move answer functions to their own file
+- restructure app a bit
+- clean up main func
+- load default commit types from config
+- little bit of code cleanup
+- move some stuff around
+- clean up load_config
+- destructure get_extracted_answers return value
+- clippy cleanup
+- replace linked-hash-map with indexmap
+- disable default features of cocogitto
+- clean up comments
+- move commit code to its own file
+- start cleaning up config
+- clean up emoji handling
+- **config:** clean up config
+- deduplicate staging and borrow commit message parts
+> Pre-staging for --all and --add-all now reuses commit::stage_changes, replacing scope::stage_tracked_changes. Commit message helpers take references, loops use iterator combinators, and stage_changes and the multiline prompt edit operations gain unit tests.
 
 ### Fixed
 
-- _(args)_ mutually exclusive hook and all (#121)
-- _(config)_ handled better using config-rs (#120)
 
-## [3.0.0](https://github.com/cococonscious/koji/compare/v2.2.0...v3.0.0) - 2024-11-26
+- make error messages consistent
+- fix typo in help
+- use git2 to get repo dir
+- only early return with message if we're in hook mode
+- **autocomplete:** check for empty repo before revwalk (#105)
+> `push_head` on Revwalk fails when the repository had just been
+> initialized as the commit reference doesn't exist yet. A simple check
+> for if the repository is empty fixes this.
+- **config:** handled better using config-rs (#120)
+- **args:** mutually exclusive hook and all (#121)
+> As the "all" argument doesn't do anything in hook mode, we might as well
+> just make them mutually exclusive for more clarity.
+- xdg crate not supporting windows (#159)
+> Fixes the failing Windows builds when releasing
+- **deps:** update rust crate gix to 0.80.0 (#180)
+> This PR contains the following updates:
+> 
+> | Package | Type | Update | Change |
+> |---|---|---|---|
+> | [gix](https://redirect.github.com/GitoxideLabs/gitoxide) |
+> dependencies | minor | `0.78.0` → `0.80.0` |
+> 
+> ---
+> 
+> ### Release Notes
+> 
+> <details>
+> <summary>GitoxideLabs/gitoxide (gix)</summary>
+> 
+> ###
+> [`v0.80.0`](https://redirect.github.com/GitoxideLabs/gitoxide/releases/tag/gix-v0.80.0):
+> gix v0.80.0
+> 
+> [Compare
+> Source](https://redirect.github.com/GitoxideLabs/gitoxide/compare/gix-v0.79.0...gix-v0.80.0)
+> 
+> ##### Bug Fixes
+> 
+> - Correctly use `$COMMON_DIR/info/exclude` to make excludes work in
+> worktrees.
+>   It turns out there is no per-worktree excludes file either.
+> - make `status` work despite broken or invalid symlinks.
+> Related to
+> [gitbutlerapp/gitbutler#12399](https://redirect.github.com/gitbutlerapp/gitbutler/issues/12399)
+> 
+> ##### Chore (BREAKING)
+> 
+> - <csr-id-2358b1d250d3d2348210fb61dcb95ebe7aa6314b/> Upgrade `prodash`
+> and `crosstermion` to the latest version.
+> This will fix the `cargo deny` issue as it brings in a newer `lru`
+> crate.
+> 
+> ##### New Features (BREAKING)
+> 
+> - encode shallow commit lists as non-empty, and introduced `nonempty` in
+> `gix-protocol`
+> - model merge-bases as a non-empty type in `gix-revision` and
+> `gix-merge`
+>   Adapt `gix` accordingly (even though it's nonbreaking).
+> 
+> ##### Commit Statistics
+> 
+> - 9 commits contributed to the release over the course of 10 calendar
+> days.
+> - 12 days passed between releases.
+> - 3 commits were understood as
+> [conventional](https://www.conventionalcommits.org).
+> - 0 issues like '(#ID)' were seen in commit messages
+> 
+> ##### Commit Details
+> 
+> <csr-read-only-do-not-edit/>
+> 
+> <details><summary>view details</summary>
+> 
+> - **Uncategorized**
+> - Merge pull request
+> [#&#8203;2440](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2440)
+> from GitoxideLabs/improvements
+> ([`93f39fb`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/93f39fb))
+> - Make `status` work despite broken or invalid symlinks.
+> ([`94b35a1`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/94b35a1))
+> - Merge pull request
+> [#&#8203;2433](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2433)
+> from GitoxideLabs/codex/nonempty-rewrite
+> ([`29040a8`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/29040a8))
+> - Adopt to changes related to the introduction of `nonempty`.
+> ([`e033441`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/e033441))
+> - Encode shallow commit lists as non-empty, and introduced `nonempty` in
+> `gix-protocol`
+> ([`78b0a6f`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/78b0a6f))
+> - Model merge-bases as a non-empty type in `gix-revision` and
+> `gix-merge`
+> ([`231fda4`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/231fda4))
+> - Merge pull request
+> [#&#8203;2377](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2377)
+> from cruessler/add-sha-256-to-gix-commitgraph
+> ([`228caf7`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/228caf7))
+> - Use `GIX_TEST_FIXTURE_HASH` for `gix-commitgraph` and `gix-pack`.
+> ([`d51b858`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/d51b858))
+> - Merge branch 'release'
+> ([`9327b73`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/9327b73))
+> 
+> </details>
+> 
+> ###
+> [`v0.79.0`](https://redirect.github.com/GitoxideLabs/gitoxide/releases/tag/gix-v0.79.0):
+> gix v0.79.0
+> 
+> [Compare
+> Source](https://redirect.github.com/GitoxideLabs/gitoxide/compare/gix-v0.78.0...gix-v0.79.0)
+> 
+> ##### Bug Fixes
+> 
+> - Correctly use `$COMMON_DIR/info/exclude` to make excludes work in
+> worktrees.
+>   It turns out there is no per-worktree excludes file either.
+> - Differentiate between `core.bare` being known or not.
+>   This allows `Repository::is_bare()` to only make assumptions based
+>   on the configuration value, which is what Git does.
+> 
+> ##### Chore (BREAKING)
+> 
+> - <csr-id-2358b1d250d3d2348210fb61dcb95ebe7aa6314b/> Upgrade `prodash`
+> and `crosstermion` to the latest version.
+> This will fix the `cargo deny` issue as it brings in a newer `lru`
+> crate.
+> 
+> ##### Bug Fixes (BREAKING)
+> 
+> - Improve `Repository::kind()` for better classification
+>   Previously it wasn't clear what it really is as it chose the wrong
+>   categories.
+> 
+> ##### New Features (BREAKING)
+> 
+> - `gix-error` instead of `thiserror`
+> - `gix-error` instead of `thiserror`
+> 
+> ##### Commit Statistics
+> 
+> - 21 commits contributed to the release over the course of 18 calendar
+> days.
+> - 18 days passed between releases.
+> - 4 commits were understood as
+> [conventional](https://www.conventionalcommits.org).
+> - 1 unique issue was worked on:
+> [#&#8203;2402](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2402)
+> 
+> ##### Commit Details
+> 
+> <csr-read-only-do-not-edit/>
+> 
+> <details><summary>view details</summary>
+> 
+> -
+> **[#&#8203;2402](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2402)**
+> - Differentiate between `core.bare` being known or not.
+> ([`02fe02b`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/02fe02b))
+> - **Uncategorized**
+> - Merge pull request
+> [#&#8203;2420](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2420)
+> from cruessler/remove-imara-diff-0-1-in-gix-blame
+> ([`28fbeb8`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/28fbeb8))
+> - Merge pull request
+> [#&#8203;2400](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2400)
+> from GitoxideLabs/gix-error
+> ([`e4f016b`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/e4f016b))
+> - Address Copilot review
+> ([`0b0e9f8`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/0b0e9f8))
+> - Refactor
+> ([`c7f84c2`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/c7f84c2))
+> - `gix-error` instead of `thiserror`
+> ([`0128df7`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/0128df7))
+> - `gix-error` instead of `thiserror`
+> ([`b8059ab`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/b8059ab))
+> - Remove feature flag blame-experimental
+> ([`44e447b`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/44e447b))
+> - Merge pull request
+> [#&#8203;2415](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2415)
+> from GitoxideLabs/improvements
+> ([`5c9e6ae`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/5c9e6ae))
+> - Adapt to changes in `gix-testtools`
+> ([`fb60c8a`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/fb60c8a))
+> - Merge pull request
+> [#&#8203;2407](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2407)
+> from GitoxideLabs/dependabot/cargo/cargo-fb4135702f
+> ([`8bceefb`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/8bceefb))
+> - Bump the cargo group with 59 updates
+> ([`7ce3c55`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/7ce3c55))
+> - Merge pull request
+> [#&#8203;2404](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2404)
+> from fenhl/patch-1
+> ([`aaf0a76`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/aaf0a76))
+> - Refactor
+> ([`d820846`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/d820846))
+> - Clarify that `blocking-http-transport-reqwest` doesn't enable
+> `reqwest`'s default features
+> ([`c45cdaf`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/c45cdaf))
+> - Merge pull request
+> [#&#8203;2403](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2403)
+> from GitoxideLabs/improvements
+> ([`75ac1d0`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/75ac1d0))
+> - Improve `Repository::kind()` for better classification
+> ([`8ea42ea`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/8ea42ea))
+> - Merge pull request
+> [#&#8203;2396](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2396)
+> from GitoxideLabs/gix-error
+> ([`e8612b5`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/e8612b5))
+> - Adapt to changes in `gix-error`
+> ([`a304f13`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/a304f13))
+> - Adapt to changes in `gix-actor`
+> ([`b80d026`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/b80d026))
+> - Merge pull request
+> [#&#8203;2393](https://redirect.github.com/GitoxideLabs/gitoxide/issues/2393)
+> from GitoxideLabs/report
+> ([`f7d0975`](https://redirect.github.com/GitoxideLabs/gitoxide/commit/f7d0975))
+> 
+> </details>
+> 
+> </details>
+> 
+> ---
+> 
+> ### Configuration
+> 
+> 📅 **Schedule**: Branch creation - Between 12:00 AM and 03:59 AM, only on
+> Monday ( * 0-3 * * 1 ) (UTC), Automerge - At any time (no schedule
+> defined).
+> 
+> 🚦 **Automerge**: Disabled by config. Please merge this manually once you
+> are satisfied.
+> 
+> ♻ **Rebasing**: Whenever PR is behind base branch, or you tick the
+> rebase/retry checkbox.
+> 
+> 🔕 **Ignore**: Close this PR and you won't be reminded about this update
+> again.
+> 
+> ---
+> 
+> - [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check
+> this box
+> 
+> ---
+> 
+> This PR was generated by [Mend Renovate](https://mend.io/renovate/).
+> View the [repository job
+> log](https://developer.mend.io/github/cococonscious/koji).
+> 
+> <!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0My4yNi41IiwidXBkYXRlZEluVmVyIjoiNDMuMzYuMiIsInRhcmdldEJyYW5jaCI6Im1haW4iLCJsYWJlbHMiOltdfQ==-->
+- **deps:** update rust crate inquire to v0.9.4 (#171)
+> This PR contains the following updates:
+> 
+> | Package | Type | Update | Change |
+> |---|---|---|---|
+> | [inquire](https://redirect.github.com/mikaelmello/inquire) |
+> dependencies | patch | `0.9.1` → `0.9.4` |
+> 
+> ---
+> 
+> ### Release Notes
+> 
+> <details>
+> <summary>mikaelmello/inquire (inquire)</summary>
+> 
+> ###
+> [`v0.9.4`](https://redirect.github.com/mikaelmello/inquire/blob/HEAD/CHANGELOG.md#094---2026-02-24)
+> 
+> [Compare
+> Source](https://redirect.github.com/mikaelmello/inquire/compare/v0.9.3...v0.9.4)
+> 
+> ##### Features
+- **deps:** update all non-major dependencies (#169)
+> This PR contains the following updates:
+> 
+> | Package | Type | Update | Change |
+> |---|---|---|---|
+> | [anyhow](https://redirect.github.com/dtolnay/anyhow) | dependencies |
+> patch | `1.0.100` → `1.0.102` |
+> | [assert_cmd](https://redirect.github.com/assert-rs/assert_cmd) |
+> dev-dependencies | patch | `2.1.1` → `2.1.2` |
+> | [clap](https://redirect.github.com/clap-rs/clap) | dependencies |
+> patch | `4.5.53` → `4.5.60` |
+> | [indexmap](https://redirect.github.com/indexmap-rs/indexmap) |
+> dependencies | minor | `2.12.1` → `2.13.0` |
+> | [predicates](https://redirect.github.com/assert-rs/predicates-rs) |
+> dev-dependencies | patch | `3.1.3` → `3.1.4` |
+> | [tempfile](https://stebalien.com/projects/tempfile-rs/)
+> ([source](https://redirect.github.com/Stebalien/tempfile)) |
+> dev-dependencies | minor | `3.24.0` → `3.26.0` |
+> 
+> ---
+> 
+> ### Release Notes
+> 
+> <details>
+> <summary>dtolnay/anyhow (anyhow)</summary>
+> 
+> ###
+> [`v1.0.102`](https://redirect.github.com/dtolnay/anyhow/releases/tag/1.0.102)
+> 
+> [Compare
+> Source](https://redirect.github.com/dtolnay/anyhow/compare/1.0.101...1.0.102)
+> 
+> - Remove backtrace dependency
+> ([#&#8203;438](https://redirect.github.com/dtolnay/anyhow/issues/438),
+> [#&#8203;439](https://redirect.github.com/dtolnay/anyhow/issues/439),
+> [#&#8203;440](https://redirect.github.com/dtolnay/anyhow/issues/440),
+> [#&#8203;441](https://redirect.github.com/dtolnay/anyhow/issues/441),
+> [#&#8203;442](https://redirect.github.com/dtolnay/anyhow/issues/442))
+> 
+> ###
+> [`v1.0.101`](https://redirect.github.com/dtolnay/anyhow/releases/tag/1.0.101)
+> 
+> [Compare
+> Source](https://redirect.github.com/dtolnay/anyhow/compare/1.0.100...1.0.101)
+> 
+> - Add #\[inline] to anyhow::Ok helper
+> ([#&#8203;437](https://redirect.github.com/dtolnay/anyhow/issues/437),
+> thanks [@&#8203;Ibitier](https://redirect.github.com/Ibitier))
+> 
+> </details>
+> 
+> <details>
+> <summary>assert-rs/assert_cmd (assert_cmd)</summary>
+> 
+> ###
+> [`v2.1.2`](https://redirect.github.com/assert-rs/assert_cmd/blob/HEAD/CHANGELOG.md#212---2026-01-09)
+> 
+> [Compare
+> Source](https://redirect.github.com/assert-rs/assert_cmd/compare/v2.1.1...v2.1.2)
+> 
+> ##### Fixes
+> 
+> - Add `#[must_use]` to help catch missing assertions
+> 
+> </details>
+> 
+> <details>
+> <summary>clap-rs/clap (clap)</summary>
+> 
+> ###
+> [`v4.5.60`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4560---2026-02-19)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.59...v4.5.60)
+> 
+> ##### Fixes
+> 
+> - *(help)* Quote empty default values, possible values
+> 
+> ###
+> [`v4.5.59`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4559---2026-02-16)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.58...v4.5.59)
+> 
+> ##### Fixes
+> 
+> - `Command::ignore_errors` no longer masks help/version on subcommands
+> 
+> ###
+> [`v4.5.58`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4558---2026-02-11)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.57...v4.5.58)
+> 
+> ###
+> [`v4.5.57`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4557---2026-02-03)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.56...v4.5.57)
+> 
+> ##### Fixes
+> 
+> - Regression from 4.5.55 where having an argument with
+> `.value_terminator("--")` caused problems with an argument with
+> `.last(true)`
+> 
+> ###
+> [`v4.5.56`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4556---2026-01-29)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.55...v4.5.56)
+> 
+> ##### Fixes
+> 
+> - On conflict error, don't show conflicting arguments in the usage
+> 
+> ###
+> [`v4.5.55`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4555---2026-01-27)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.54...v4.5.55)
+> 
+> ##### Fixes
+> 
+> - Fix inconsistency in precedence between positionals with a
+> `value_terminator("--")` and escapes (`--`) where `./foo -- bar` means
+> the first arg is empty, rather than escaping future args
+> 
+> ###
+> [`v4.5.54`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4554---2026-01-02)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.53...v4.5.54)
+> 
+> ##### Fixes
+> 
+> - *(help)* Move `[default]` to its own paragraph when
+> `PossibleValue::help` is present in `--help`
+> 
+> </details>
+> 
+> <details>
+> <summary>indexmap-rs/indexmap (indexmap)</summary>
+> 
+> ###
+> [`v2.13.0`](https://redirect.github.com/indexmap-rs/indexmap/blob/HEAD/RELEASES.md#2130-2026-01-07)
+> 
+> [Compare
+> Source](https://redirect.github.com/indexmap-rs/indexmap/compare/2.12.1...2.13.0)
+> 
+> - Implemented `Clone` for `IntoKeys` and `IntoValues`.
+> - Added `map::Slice::split_at_checked` and `split_at_mut_checked`.
+> - Added `set::Slice::split_at_checked`.
+> 
+> </details>
+> 
+> <details>
+> <summary>assert-rs/predicates-rs (predicates)</summary>
+> 
+> ###
+> [`v3.1.4`](https://redirect.github.com/assert-rs/predicates-rs/blob/HEAD/CHANGELOG.md#314---2026-02-11)
+> 
+> [Compare
+> Source](https://redirect.github.com/assert-rs/predicates-rs/compare/v3.1.3...v3.1.4)
+> 
+> - Make `BoxPredicate::find_case` use the inner `find_case`
+> implementation
+> 
+> </details>
+> 
+> <details>
+> <summary>Stebalien/tempfile (tempfile)</summary>
+> 
+> ###
+> [`v3.26.0`](https://redirect.github.com/Stebalien/tempfile/blob/HEAD/CHANGELOG.md#3260)
+> 
+> - Support `NamedTempFile::persist` on RedoxOS
+> ([#&#8203;393](https://redirect.github.com/Stebalien/tempfile/issues/393))
+> (thanks to
+> [@&#8203;Andy-Python-Programmer](https://redirect.github.com/Andy-Python-Programmer)).
+> 
+> ###
+> [`v3.25.0`](https://redirect.github.com/Stebalien/tempfile/blob/HEAD/CHANGELOG.md#3250)
+> 
+> - Allow `getrandom` 0.4.x while retaining support for `getrandom` 0.3.x.
+> 
+> </details>
+> 
+> ---
+> 
+> ### Configuration
+> 
+> 📅 **Schedule**: Branch creation - Between 12:00 AM and 03:59 AM, only on
+> Monday ( * 0-3 * * 1 ) (UTC), Automerge - At any time (no schedule
+> defined).
+> 
+> 🚦 **Automerge**: Disabled by config. Please merge this manually once you
+> are satisfied.
+> 
+> ♻ **Rebasing**: Whenever PR is behind base branch, or you tick the
+> rebase/retry checkbox.
+> 
+> 👻 **Immortal**: This PR will be recreated if closed unmerged. Get
+> [config
+> help](https://redirect.github.com/renovatebot/renovate/discussions) if
+> that's undesired.
+> 
+> ---
+> 
+> - [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check
+> this box
+> 
+> ---
+> 
+> This PR was generated by [Mend Renovate](https://mend.io/renovate/).
+> View the [repository job
+> log](https://developer.mend.io/github/cococonscious/koji).
+> 
+> <!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0Mi41OS4wIiwidXBkYXRlZEluVmVyIjoiNDMuMzYuMiIsInRhcmdldEJyYW5jaCI6Im1haW4iLCJsYWJlbHMiOltdfQ==-->
+- **deps:** pin and upgrade deps (cargo & gh actions)
+- **commit:** refresh stat and invalidate TREE cache when staging via gix
+> `stage_tracked` updates index entries' blob ids in-place but left two
+> gix-index pieces stale, which manifested only when cocogitto (libgit2)
+> wrote the commit afterwards:
+> 
+> - The TREE extension still pointed at the pre-edit root tree, so
+>   libgit2's `index.write_tree()` returned the cached old tree id —
+>   producing a commit whose tree equals its parent's (empty diff).
+> - The entry `stat` (mtime/size/ino) was not refreshed from disk, so
+>   `git status` reported the file as modified after commit even though
+>   index, HEAD and worktree blobs all matched.
+> 
+> Drop the TREE extension and rewrite `entry.stat` from the worktree
+> file's metadata before writing the index.
+- **commit:** make --all match git add -A and handle missing index
+> Stage untracked files (matching documented `git add -A` semantics) and
+> gracefully open `.git/index` via `at_or_default` so `koji -a` works in
+> a fresh repo before any commit exists.
 
-### Added
+### Build
 
-- type filtering, multi-line body support ([#99](https://github.com/cococonscious/koji/pull/99))
-- breaking change footers ([#101](https://github.com/cococonscious/koji/pull/101))
-- [**breaking**] stage files, better args, deps ([#102](https://github.com/cococonscious/koji/pull/102))
-- add shell completions subcommand ([#106](https://github.com/cococonscious/koji/pull/106))
-- non-default vendored-openssl feature ([#98](https://github.com/cococonscious/koji/pull/98))
-- _(cargo)_ add documentation and repository links ([#88](https://github.com/cococonscious/koji/pull/88))
 
-### Changed
-
-- split test and coverage, deps ([#107](https://github.com/cococonscious/koji/pull/107))
-- shorter test asserts, vendored openssl, complete workflow overhaul ([#94](https://github.com/cococonscious/koji/pull/94))
-- _(readme)_ better badges ([#100](https://github.com/cococonscious/koji/pull/100))
-- _(gitignore)_ add intellij, vim, vscode and git ([#96](https://github.com/cococonscious/koji/pull/96))
-- update repository url, badges and license ([#93](https://github.com/cococonscious/koji/pull/93))
+- **deps-dev :** get derive as a feature from serde
+- make release bin smaller
+- **deps:** update deps
+- **deps:** update clap to 3.0.0-rc.8
+- **deps:** update requestty to 0.2.1
+- **deps:** update clap to 3.0.0
+- **deps:** update rust to 1.58.0
+- **deps:** update rust to 1.58.1
+- **cog:** add post bump hooks
+- **deps:** update all the deps
+- **deps:** update rust to 1.61.0
+- remove rust-toolchain file
+- **deps:** update all the deps
+- **deps:** update all the deps
+- **deps:** update clap and emojis
+- **deps:** update deps, remove patch constraints
+- **deps:** update toml to 0.8
+- **deps:** update git2 to 0.18
+- **deps:** update indexmap to 2.1
+- **deps:** update cocogitto to 6.0
+- use devenv
 - use asdf
-
-### Fixed
-
-- _(autocomplete)_ check for empty repo before revwalk ([#105](https://github.com/cococonscious/koji/pull/105))
-
-## [2.2.0](https://github.com/cococonscious/koji/compare/2.1.0..2.2.0) - 2024-01-06
-
-#### Build system
-
-- **(deps)** update cocogitto to 6.0 - ([503759c](https://github.com/cococonscious/koji/commit/503759c6368e85b73682c8792c272297eea897ee)) - Danny Tatom
-
----
-
-## [2.1.0](https://github.com/cococonscious/koji/compare/2.0.0..2.1.0) - 2023-11-24
-
-#### Features
-
-- allow signing commits - ([66b9d9e](https://github.com/cococonscious/koji/commit/66b9d9e42e8b44b895e535a8ceaf2d399f2fbbee)) - Danny Tatom
-
----
-
-## [2.0.0](https://github.com/cococonscious/koji/compare/1.5.3..2.0.0) - 2023-11-23
-
-#### Build system
-
-- **(deps)** update indexmap to 2.1 - ([72ba166](https://github.com/cococonscious/koji/commit/72ba1660980ab8da47b1b0d1aac6cacd8a5ea3c7)) - Danny Tatom
-- **(deps)** update git2 to 0.18 - ([e05f7f7](https://github.com/cococonscious/koji/commit/e05f7f77b1b93c27cf5072b460620e8eaeefc534)) - Danny Tatom
-- **(deps)** update toml to 0.8 - ([a757f3c](https://github.com/cococonscious/koji/commit/a757f3c009cff3d4a3a69dadde88cacdd3111837)) - Danny Tatom
-- **(deps)** update deps, remove patch constraints - ([3ad9f87](https://github.com/cococonscious/koji/commit/3ad9f874a6b7443c280351b121fb618b8c2fa14a)) - Danny Tatom
-- **(deps)** update clap and emojis - ([0475b64](https://github.com/cococonscious/koji/commit/0475b64668581d1208bec378ac092241a67de4c2)) - Danny Tatom
-
-#### Documentation
-
-- **(readme)** add new options - ([fcbbaae](https://github.com/cococonscious/koji/commit/fcbbaae75e5f2bf0dd3da64e25043763e3f5f946)) - Danny Tatom
-- **(readme)** fix CI badge - ([29da976](https://github.com/cococonscious/koji/commit/29da97655acdede47aa74b9e0d797b9d79c2c462)) - Danny Tatom
-- **(readme)** update demo gif - ([82a4b6f](https://github.com/cococonscious/koji/commit/82a4b6fcd7562597d18797aa409474671662fc23)) - Danny Tatom
-
-#### Features
-
-- add ability to skip breaking changes and issues questions - ([8cc6b30](https://github.com/cococonscious/koji/commit/8cc6b30f00e8cf5e128e48a6e8c49f15794df9dc)) - Danny Tatom
-
-#### Refactoring
-
-- **(config)** clean up config - ([02a60d3](https://github.com/cococonscious/koji/commit/02a60d36bb5a66dbaf81377d74ea51da49f6b9ab)) - Danny Tatom
-
----
-
-## [1.5.3](https://github.com/cococonscious/koji/compare/1.5.2..1.5.3) - 2022-10-02
-
-#### Build system
-
-- **(deps)** update all the deps - ([af5687f](https://github.com/cococonscious/koji/commit/af5687f8d7c9a15ba53c6f9598be312948cfebd1)) - Danny Tatom
-
----
-
-## [1.5.2](https://github.com/cococonscious/koji/compare/1.5.1..1.5.2) - 2022-08-11
-
-#### Build system
-
-- **(deps)** update all the deps - ([3033a04](https://github.com/cococonscious/koji/commit/3033a047fc6322d8508bbe28e189421e474ae920)) - Danny Tatom
-- **(deps)** update rust to 1.61.0 - ([ca49ee8](https://github.com/cococonscious/koji/commit/ca49ee8c8eaf8228a5b910f8be5b0f34f2d3f450)) - Danny Tatom
-- remove rust-toolchain file - ([b6d638b](https://github.com/cococonscious/koji/commit/b6d638b21831cd3eacb4e2783ee6ac3dad7c7035)) - Danny Tatom
-
-#### Features
-
-- finish cleaning up config - ([e108265](https://github.com/cococonscious/koji/commit/e1082657d68d4d40417d47cf21579d41e280a5ab)) - Danny Tatom
-
-#### Miscellaneous Chores
-
-- **(docs)** remove extra config examples - ([1ddbe21](https://github.com/cococonscious/koji/commit/1ddbe21e7deb3fdc4e019cce7c369e7e8d149dfe)) - Danny Tatom
-- fix typo in comment - ([92c8bd7](https://github.com/cococonscious/koji/commit/92c8bd74972181102cd5bda6904e1a83b9fba43a)) - Danny Tatom
-
-#### Refactoring
-
-- clean up emoji handling - ([a7aaad9](https://github.com/cococonscious/koji/commit/a7aaad9c07369e2b4721ec0f58e2b8ef524b35a0)) - Danny Tatom
-- start cleaning up config - ([6f2d2b0](https://github.com/cococonscious/koji/commit/6f2d2b04e4d6f12b2a23cdd8e46f9c01fa970d48)) - Danny Tatom
-- move commit code to its own file - ([d6f91d7](https://github.com/cococonscious/koji/commit/d6f91d70fb75ffcc118427d2fad181c6f8fd8571)) - Danny Tatom
-- clean up comments - ([68713ad](https://github.com/cococonscious/koji/commit/68713adc871403ccd23aa1472dd8cd303bb79978)) - Danny Tatom
-- disable default features of cocogitto - ([94dc806](https://github.com/cococonscious/koji/commit/94dc80660e92efeb811c855dd7acc7205eb77e58)) - Danny Tatom
-- replace linked-hash-map with indexmap - ([0b4d689](https://github.com/cococonscious/koji/commit/0b4d689c6d9dee871134c7a69957cc8f120e275d)) - Danny Tatom
-
----
-
-## [1.5.1](https://github.com/cococonscious/koji/compare/1.5.0..1.5.1) - 2022-05-01
-
-#### Bug Fixes
-
-- only early return with message if we're in hook mode - ([94c156d](https://github.com/cococonscious/koji/commit/94c156d6ca291073869a03dab83e761a6c9e36f9)) - Danny Tatom
-
-#### Documentation
-
-- **(readme)** update hook usage - ([8547437](https://github.com/cococonscious/koji/commit/85474374b4bad97465b396359191247caa541f9a)) - Danny Tatom
-
-#### Miscellaneous Chores
-
-- add desc and license to cargo file - ([3d2bf72](https://github.com/cococonscious/koji/commit/3d2bf729aa6818a0eeaaf6a2f0ee239bae3cd6e8)) - Danny Tatom
-
----
-
-## [1.5.0](https://github.com/cococonscious/koji/compare/1.4.0..1.5.0) - 2022-05-01
-
-#### Bug Fixes
-
-- use git2 to get repo dir - ([db5fa44](https://github.com/cococonscious/koji/commit/db5fa449b832c4a75bc264efe1e1e189519adb0b)) - Danny Tatom
-
-#### Build system
-
-- **(cog)** add post bump hooks - ([7e1cc59](https://github.com/cococonscious/koji/commit/7e1cc59cb8acd3acb3a7fd33d3879015ba799265)) - Danny Tatom
-- **(deps)** update all the deps - ([4c438ea](https://github.com/cococonscious/koji/commit/4c438eab192b8453ec10a746b4f0d0f254377160)) - Danny Tatom
-- **(deps)** update rust to 1.58.1 - ([2feb1be](https://github.com/cococonscious/koji/commit/2feb1be8b704837305a13e996f997f1b8875d46e)) - Danny
-- **(deps)** update rust to 1.58.0 - ([2c5e6b7](https://github.com/cococonscious/koji/commit/2c5e6b7f3f51478fa818ce11f1e71caa17cd034f)) - Danny Tatom
-- **(deps)** update clap to 3.0.0 - ([76231fb](https://github.com/cococonscious/koji/commit/76231fbff4e031ec77da3064514fadf805bf8719)) - Danny Tatom
-- **(deps)** update requestty to 0.2.1 - ([e2daea9](https://github.com/cococonscious/koji/commit/e2daea959caada8da638b6dee22fd6aa30ff95da)) - Danny Tatom
-
-#### Continuous Integration
-
-- **(workflow)** rename build script - ([93764ae](https://github.com/cococonscious/koji/commit/93764aea001e180211881100b7afdeaaec50017b)) - Danny Tatom
-- **(workflow)** remove audit workflow - ([2bad853](https://github.com/cococonscious/koji/commit/2bad853c2fdd2686ff6d926650e24e3deebc4acf)) - Danny Tatom
-- **(workflows)** redo how releases work - ([02c5177](https://github.com/cococonscious/koji/commit/02c5177ec61a68179ddf06e7ba415f722f760e79)) - Danny Tatom
-
-#### Documentation
-
-- **(changelog)** clean up names - ([f8eaa31](https://github.com/cococonscious/koji/commit/f8eaa31d9b29b7cda3b50458aae408fd538bc0c5)) - Danny Tatom
-- **(readme)** better explain how the git hook works - ([8d08912](https://github.com/cococonscious/koji/commit/8d08912611e8fb951b593a8de54c406ccd6b753f)) - Danny Tatom
-- **(readme)** explain git hook usage - ([b12ff65](https://github.com/cococonscious/koji/commit/b12ff65857a841eae955126aa195bad5622428dd)) - Danny Tatom
-- **(readme)** add config options - ([e2a3b76](https://github.com/cococonscious/koji/commit/e2a3b7603891c01c597f948821f238b531f6b2f9)) - Danny Tatom
-- **(readme)** clean up a bit - ([418dbb8](https://github.com/cococonscious/koji/commit/418dbb890fb5cbd4cc5b38a44e0dbebc5ab473e2)) - Danny Tatom
-- **(readme)** clean up - ([7f14e74](https://github.com/cococonscious/koji/commit/7f14e743f79bf1be50941306492256c79d669adc)) - Danny Tatom
-- **(readme)** update - ([3ace4c7](https://github.com/cococonscious/koji/commit/3ace4c74f94d87f654655ed24a89d40cb7ffd71d)) - Danny Tatom
-- **(readme)** add link for getting it working on M1 - ([69573be](https://github.com/cococonscious/koji/commit/69573be783c695d31fff49392b9926910812e84d)) - Danny Tatom
-- **(security)** remove example committing secrets - ([a6b22dd](https://github.com/cococonscious/koji/commit/a6b22ddbabe8d3b34e97b0904a490892ab005c9d)) - AJ ONeal
-
-#### Features
-
-- **(config)** better config handling - ([d6ad1b9](https://github.com/cococonscious/koji/commit/d6ad1b9010c7fd7e5f693f0ed5e8b72b2df91a17)) - Danny Tatom
-- return early if commit message is already conventional - ([caff83d](https://github.com/cococonscious/koji/commit/caff83d1cdce1516ee2f6e4e2cfbbd95a0d87a58)) - Danny Tatom
-- use message passed in via -m flag - ([fe58e51](https://github.com/cococonscious/koji/commit/fe58e514e136633d95d9427a363288c282e38c81)) - Danny Tatom
-
-#### Refactoring
-
-- clippy cleanup - ([d12ad21](https://github.com/cococonscious/koji/commit/d12ad219f1e59d9c07efdb1676996f754d7cee64)) - Danny Tatom
-
-#### Tests
-
-- add test for replace_emoji_shortcodes - ([f3948e5](https://github.com/cococonscious/koji/commit/f3948e5d2a0bf348470304c20638318606faaab3)) - Danny Tatom
-- add more tests for prompt - ([932bc4c](https://github.com/cococonscious/koji/commit/932bc4cdc1fad25ca090b4fd63430d1d709f3664)) - Danny Tatom
-
----
-
-## 1.4.0 - 2021-12-29
-
-### Documentation
-
-7bc7a6 - add notes for autocomplete - Danny Tatom
-
-1ed5dd - fix badge url - Danny Tatom
-
-cdc36b - fix typo - Danny Tatom
-
-622b5b - update feature list - Danny Tatom
-
-2c2670 - fix typo - Danny Tatom
-
-### Features
-
-7de38d - add support for emoji shortcodes - Danny Tatom
-
-920181 - add optional autocomplete for scope prompt - Danny Tatom
-
-### Tests
-
-92ad3b - remove silly test - Danny Tatom
-
-fcf3f1 - fix tests - Danny Tatom
-
-7ae71c - move get_conventional_message assertion to existing test - Danny Tatom
-
-e56d87 - add a (redundant?) test for get_conventional_message - Danny Tatom
-
-601dcd - add test for get_extracted_answers - Danny Tatom
-
-dbfe90 - add test for get_commit_types - Danny Tatom
-
-### Bug Fixes
-
-75aaca - fix typo in help - Danny Tatom
-
-### Continuous Integration
-
-28b4c1 - fix codecov ignore path - Danny Tatom
-
-84a9c1 - add codecov config file - Danny Tatom
-
-### Build system
-
-4994be - update clap to 3.0.0-rc.8 - Danny Tatom
-
-### Refactoring
-
-f1a000 - destructure get_extracted_answers return value - Danny Tatom
-
-edd03f - clean up load_config - Danny Tatom
-
-4cde0f - move some stuff around - Danny Tatom
-
-4b0158 - little bit of code cleanup - Danny Tatom
-
----
-
-## 1.3.4 - 2021-12-23
-
-### Continuous Integration
-
-b340c3 - make publish.sh executable - Danny Tatom
-
----
-
-## 1.3.3 - 2021-12-23
-
-### Continuous Integration
-
-599ffe - trying again - Danny Tatom
-
----
-
-## 1.3.2 - 2021-12-23
-
-### Continuous Integration
-
-c27062 - try again to fix publish - Danny Tatom
-
----
-
-## 1.3.1 - 2021-12-23
-
-### Continuous Integration
-
-228a7e - attempt to fix publish workflow - Danny Tatom
-
----
-
-## 1.3.0 - 2021-12-23
-
-### Documentation
-
-58c3fb - remove strikethru from hook feature - Danny Tatom
-
-8752fd - add hook example - Danny Tatom
-
-### Continuous Integration
-
-70ce66 - update publish workflow - Danny Tatom
-
-78db14 - update rusty-hook config - Danny Tatom
-
-### Features
-
-97adbc - add option to run as git hook - Danny Tatom
-
-1fb6ac - allow passing path to a config file - Danny Tatom
-
-### Build system
-
-03cf21 - update deps - Danny Tatom
-
----
-
-## 1.2.0 - 2021-10-28
-
-### Documentation
-
-413fe9 - fix typo in codecov badge - Danny Tatom
-
-0bcc28 - add codecov badge - Danny Tatom
-
-7a91bb - add feature list & more usage examples - Danny Tatom
-
-12dc6f - clean up usage section - Danny Tatom
-
-8d5b34 - update - Danny Tatom
-
-### Refactoring
-
-916a51 - load default commit types from config - Danny Tatom
-
-2e7cd9 - clean up main func - Danny Tatom
-
-db4756 - restructure app a bit - Danny Tatom
-
-### Tests
-
-b7986c - split up tests - Danny Tatom
-
-### Bug Fixes
-
-31ef10 - make error messages consistent - Danny Tatom
-
-### Features
-
-c3f3c6 - add support for commit types with no emoji - Danny Tatom
-
-### Continuous Integration
-
-b386dc - add codecov - Danny Tatom
-
-7e86e9 - add rust-toolchain - Danny Tatom
-
-8f7a8f - add audit workflow - Danny Tatom
-
----
-
-## 1.1.2 - 2021-10-21
-
-### Continuous Integration
-
-87bef9 - maybe fix build - Danny Tatom
-
----
-
-## 1.1.1 - 2021-10-21
-
-### Miscellaneous Chores
-
-15e89b - remove cargo-bump - Danny Tatom
-
-76ca7f - set rust edition to 2021 - Danny Tatom
-
-### Build system
-
-286e83 - make release bin smaller - Danny Tatom
-
-f977bb - get derive as a feature from serde - Danny Tatom
-
-### Refactoring
-
-9d3e12 - move answer functions to their own file - Danny Tatom
-
-bc8aae - use const strings for answer keys - Danny Tatom
-
-ce90dd - replace config loading with a single load_config function - Danny Tatom
-
-dc718a - clean up get_amended_body - Danny Tatom
-
-aee814 - clean up render_commit_type_choice - Danny Tatom
-
----
-
-## 1.1.0 - 2021-10-21
-
-### Refactoring
-
-66c68d - remove unnecessary `Error`s from `Result`s - Danny Tatom
-
-f3a875 - little bit of some cleanup - Danny Tatom
-
-a93fc3 - put config file handling into its own file - Danny Tatom
-
-### Features
-
-ef923a - add validation to questions - Danny Tatom
-
-### Documentation
-
-d6cab7 - add better config examples - Danny Tatom
-
-72450e - add deps.rs badge - Danny Tatom
-
-468682 - add version badge - Danny Tatom
-
-afcfe2 - capitalize cli - Danny Tatom
-
-18cfcb - add link to releases page - Danny Tatom
-
-### Miscellaneous Chores
-
-9984fd - add issue templates - Danny Tatom
-
----
-
-## 1.0.0 - 2021-10-20
-
----
-
-This changelog was generated by [cocogitto](https://github.com/oknozor/cocogitto).
+- adopt just, dprint, cargo-deny and git-cliff tooling
+> Replace the pre-commit framework with a tracked git hook, pin the toolchain to 1.98.1, add the dependency policy, changelog template and command layer used across veeso projects, and turn on the shared rustc lints.
+- migrate to rust edition 2024
+> Integration tests pass XDG_CONFIG_HOME to each spawned command instead of mutating the shared process environment, which is unsafe in edition 2024 and raced across parallel tests.
+
+### Deps
+
+
+- non-default vendored-openssl feature, pin cocogitto (#98)
+> Makes the change introduced in 70d5b2e optional and only be used in
+> Windows builds. Pinned cocogitto because it doesn't respect semantic
+> versioning yet.
+- update all non-major dependencies (#130)
+> This PR contains the following updates:
+> 
+> | Package | Type | Update | Change |
+> |---|---|---|---|
+> | [clap](https://redirect.github.com/clap-rs/clap) | dependencies |
+> patch | `4.5.23` -> `4.5.27` |
+> | [indexmap](https://redirect.github.com/indexmap-rs/indexmap) |
+> dependencies | patch | `2.7.0` -> `2.7.1` |
+> 
+> ---
+> 
+> ### Release Notes
+> 
+> <details>
+> <summary>clap-rs/clap (clap)</summary>
+> 
+> ###
+> [`v4.5.27`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4527---2025-01-20)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.26...v4.5.27)
+> 
+> ##### Documentation
+> 
+> -   Iterate on tutorials and reference based on feedback
+> 
+> ###
+> [`v4.5.26`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4526---2025-01-09)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.25...v4.5.26)
+> 
+> ##### Fixes
+> 
+> -   *(error)* Reduce binary size with the `suggestions` feature
+> 
+> ###
+> [`v4.5.25`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4525---2025-01-09)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.24...v4.5.25)
+> 
+> ##### Fixes
+> 
+> -   *(help)* Reduce binary size
+> 
+> ###
+> [`v4.5.24`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4524---2025-01-07)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.23...v4.5.24)
+> 
+> ##### Fixes
+> 
+> - *(parser)* Correctly handle defaults with `ignore_errors(true)` and
+> when a suggestion is provided for an unknown argument
+> 
+> </details>
+> 
+> <details>
+> <summary>indexmap-rs/indexmap (indexmap)</summary>
+> 
+> ###
+> [`v2.7.1`](https://redirect.github.com/indexmap-rs/indexmap/blob/HEAD/RELEASES.md#271-2025-01-19)
+> 
+> [Compare
+> Source](https://redirect.github.com/indexmap-rs/indexmap/compare/2.7.0...2.7.1)
+> 
+> -   Added `#[track_caller]` to functions that may panic.
+> -   Improved memory reservation for `insert_entry`.
+> 
+> </details>
+> 
+> ---
+> 
+> ### Configuration
+> 
+> 📅 **Schedule**: Branch creation - "* 0-3 * * 1" (UTC), Automerge - At
+> any time (no schedule defined).
+> 
+> 🚦 **Automerge**: Disabled by config. Please merge this manually once you
+> are satisfied.
+> 
+> ♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the
+> rebase/retry checkbox.
+> 
+> 👻 **Immortal**: This PR will be recreated if closed unmerged. Get
+> [config
+> help](https://redirect.github.com/renovatebot/renovate/discussions) if
+> that's undesired.
+> 
+> ---
+> 
+> - [x] <!-- rebase-check -->If you want to rebase/retry this PR, check
+> this box
+> 
+> ---
+> 
+> This PR was generated by [Mend Renovate](https://mend.io/renovate/).
+> View the [repository job
+> log](https://developer.mend.io/github/cococonscious/koji).
+> 
+> <!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiIzOS45Mi4wIiwidXBkYXRlZEluVmVyIjoiMzkuMTA3LjAiLCJ0YXJnZXRCcmFuY2giOiJtYWluIiwibGFiZWxzIjpbXX0=-->
+- update all non-major dependencies (#136)
+> This PR contains the following updates:
+> 
+> | Package | Type | Update | Change |
+> |---|---|---|---|
+> | [clap](https://redirect.github.com/clap-rs/clap) | dependencies |
+> patch | `4.5.27` -> `4.5.30` |
+> | [tempfile](https://stebalien.com/projects/tempfile-rs/)
+> ([source](https://redirect.github.com/Stebalien/tempfile)) |
+> dev-dependencies | minor | `3.15.0` -> `3.17.1` |
+> 
+> ---
+> 
+> ### Release Notes
+> 
+> <details>
+> <summary>clap-rs/clap (clap)</summary>
+> 
+> ###
+> [`v4.5.30`](https://redirect.github.com/clap-rs/clap/compare/clap_complete-v4.5.29...clap_complete-v4.5.30)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.29...v4.5.30)
+> 
+> ###
+> [`v4.5.29`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4529---2025-02-11)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.28...v4.5.29)
+> 
+> ##### Fixes
+> 
+> - Change `ArgMatches::args_present` so not-present flags are considered
+> not-present (matching the documentation)
+> 
+> ###
+> [`v4.5.28`](https://redirect.github.com/clap-rs/clap/blob/HEAD/CHANGELOG.md#4528---2025-02-03)
+> 
+> [Compare
+> Source](https://redirect.github.com/clap-rs/clap/compare/v4.5.27...v4.5.28)
+> 
+> ##### Features
+> 
+> - *(derive)* Unstable support for full markdown syntax for doc comments,
+> enabled with `unstable-markdown`
+> 
+> </details>
+> 
+> <details>
+> <summary>Stebalien/tempfile (tempfile)</summary>
+> 
+> ###
+> [`v3.17.1`](https://redirect.github.com/Stebalien/tempfile/blob/HEAD/CHANGELOG.md#3171)
+> 
+> [Compare
+> Source](https://redirect.github.com/Stebalien/tempfile/compare/v3.17.0...v3.17.1)
+> 
+> - Fix build with `windows-sys` 0.52. Unfortunately, we have no CI for
+> older `windows-sys` versions at the moment...
+> 
+> ###
+> [`v3.17.0`](https://redirect.github.com/Stebalien/tempfile/blob/HEAD/CHANGELOG.md#3170)
+> 
+> [Compare
+> Source](https://redirect.github.com/Stebalien/tempfile/compare/v3.16.0...v3.17.0)
+> 
+> - Make sure to use absolute paths in when creating unnamed temporary
+> files (avoids a small race in the "immediate unlink" logic) and in
+> `Builder::make_in` (when creating temporary files of arbitrary types).
+> - Prevent a theoretical crash that could (maybe) happen when a temporary
+> file is created from a drop function run in a TLS destructor. Nobody has
+> actually reported a case of this happening in practice and I have been
+> unable to create this scenario in a test.
+> - When reseeding with `getrandom`, use platform (e.g., CPU) specific
+> randomness sources where possible.
+> -   Clarify some documentation.
+> - Unlink unnamed temporary files on windows *immediately* when possible
+> instead of waiting for the handle to be closed. We open files with
+> "Unix" semantics, so this is generally possible.
+> 
+> ###
+> [`v3.16.0`](https://redirect.github.com/Stebalien/tempfile/blob/HEAD/CHANGELOG.md#3160)
+> 
+> [Compare
+> Source](https://redirect.github.com/Stebalien/tempfile/compare/v3.15.0...v3.16.0)
+> 
+> - Update `getrandom` to `0.3.0` (thanks to
+> [@&#8203;paolobarbolini](https://redirect.github.com/paolobarbolini)).
+> - Allow `windows-sys` versions `0.59.x` in addition to `0.59.0` (thanks
+> [@&#8203;ErichDonGubler](https://redirect.github.com/ErichDonGubler)).
+> - Improved security documentation (thanks to
+> [@&#8203;n0toose](https://redirect.github.com/n0toose) for collaborating
+> with me on this).
+> 
+> </details>
+> 
+> ---
+> 
+> ### Configuration
+> 
+> 📅 **Schedule**: Branch creation - "* 0-3 * * 1" (UTC), Automerge - At
+> any time (no schedule defined).
+> 
+> 🚦 **Automerge**: Disabled by config. Please merge this manually once you
+> are satisfied.
+> 
+> ♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the
+> rebase/retry checkbox.
+> 
+> 👻 **Immortal**: This PR will be recreated if closed unmerged. Get
+> [config
+> help](https://redirect.github.com/renovatebot/renovate/discussions) if
+> that's undesired.
+> 
+> ---
+> 
+> - [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check
+> this box
+> 
+> ---
+> 
+> This PR was generated by [Mend Renovate](https://mend.io/renovate/).
+> View the [repository job
+> log](https://developer.mend.io/github/cococonscious/koji).
+> 
+> <!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiIzOS4xNjQuMSIsInVwZGF0ZWRJblZlciI6IjM5LjE2Ny4xIiwidGFyZ2V0QnJhbmNoIjoibWFpbiIsImxhYmVscyI6W119-->
+
+### Style
+
+
+- format the tree with dprint and nightly rustfmt
