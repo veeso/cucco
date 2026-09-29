@@ -1,28 +1,22 @@
 # cucco
 
-<p align="center">~ An interactive CLI for creating conventional commits ~</p>
+🐓 An interactive CLI for creating conventional commits
 
-<p align="center">Developed by <a href="https://veeso.me/" target="_blank">@veeso</a></p>
+[![License-MIT](https://img.shields.io/badge/License-MIT-teal.svg)](https://opensource.org/licenses/MIT)
+[![Repo stars](https://img.shields.io/github/stars/veeso/cucco.svg?style=plain)](https://github.com/veeso/cucco/stargazers)
+[![Downloads counter](https://img.shields.io/crates/d/cucco.svg)](https://crates.io/crates/cucco)
+[![Latest version](https://img.shields.io/crates/v/cucco.svg)](https://crates.io/crates/cucco)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org)
+[![Ko-fi](https://img.shields.io/badge/donate-ko--fi-red)](https://ko-fi.com/veeso)
 
-<p align="center">
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-teal.svg" alt="License-MIT" /></a>
-  <a href="https://github.com/veeso/cucco/stargazers"><img src="https://img.shields.io/github/stars/veeso/cucco.svg?style=plain" alt="Repo stars" /></a>
-  <a href="https://crates.io/crates/cucco"><img src="https://img.shields.io/crates/d/cucco.svg" alt="Downloads counter" /></a>
-  <a href="https://crates.io/crates/cucco"><img src="https://img.shields.io/crates/v/cucco.svg" alt="Latest version" /></a>
-  <a href="https://www.conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits" /></a>
-  <a href="https://ko-fi.com/veeso"><img src="https://img.shields.io/badge/donate-ko--fi-red" alt="Ko-fi" /></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/veeso/cucco/actions/workflows/ci.yml"><img src="https://github.com/veeso/cucco/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://github.com/veeso/cucco/actions/workflows/trufflehog.yml"><img src="https://github.com/veeso/cucco/actions/workflows/trufflehog.yml/badge.svg" alt="TruffleHog" /></a>
-  <a href="https://github.com/veeso/cucco/actions/workflows/zizmor.yml"><img src="https://github.com/veeso/cucco/actions/workflows/zizmor.yml/badge.svg" alt="zizmor" /></a>
-  <a href="https://coveralls.io/github/veeso/cucco"><img src="https://coveralls.io/repos/github/veeso/cucco/badge.svg" alt="Coveralls" /></a>
-</p>
+[![CI](https://github.com/veeso/cucco/actions/workflows/ci.yml/badge.svg)](https://github.com/veeso/cucco/actions/workflows/ci.yml)
+[![TruffleHog](https://github.com/veeso/cucco/actions/workflows/trufflehog.yml/badge.svg)](https://github.com/veeso/cucco/actions/workflows/trufflehog.yml)
+[![zizmor](https://github.com/veeso/cucco/actions/workflows/zizmor.yml/badge.svg)](https://github.com/veeso/cucco/actions/workflows/zizmor.yml)
+[![Coveralls](https://coveralls.io/repos/github/veeso/cucco/badge.svg)](https://coveralls.io/github/veeso/cucco)
 
 ---
 
-## About cucco 🐔
+## About cucco 🐓
 
 cucco is an interactive CLI for creating
 [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/), built

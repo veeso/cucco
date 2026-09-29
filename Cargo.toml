@@ -39,7 +39,7 @@ clap_complete_command = { version = "0.6", features = ["nushell"] }
 cocogitto = { version = "7", default-features = false }
 config = { version = "0.15", features = ["toml"] }
 conventional_commit_parser = "0.9"
-dirs = "6"
+dirs = "7"
 emojis = "0.9"
 gix = "0.88"
 indexmap = "2"

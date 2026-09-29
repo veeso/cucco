@@ -14,7 +14,7 @@ use cucco::status::{StagingStatus, check_staging, has_tracked_changes};
 
 #[derive(Parser, Debug)]
 #[command(
-    about = "🐔 An interactive CLI for creating conventional commits.",
+    about = "🐓 An interactive CLI for creating conventional commits.",
     version
 )]
 struct Args {
