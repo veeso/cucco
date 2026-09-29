@@ -83,6 +83,10 @@ git add README.md
 cucco
 ```
 
+While entering the longer description or breaking-change details, press
+Alt+Enter to insert a newline. Press Enter without Alt to submit the prompt.
+The characters `\n` are treated as literal text.
+
 See `cucco --help` for more options.
 
 Like `git commit`, cucco can stage changes for you:

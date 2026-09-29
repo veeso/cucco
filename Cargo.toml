@@ -43,7 +43,7 @@ dirs = "7"
 emojis = "0.9"
 gix = "0.88"
 indexmap = "2"
-inquire = "0.9"
+inquire = { version = "0.9", features = ["experimental-multiline-input"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"

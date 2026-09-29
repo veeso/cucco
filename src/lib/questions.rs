@@ -350,7 +350,7 @@ fn prompt_summary(msg: String) -> Result<String> {
 }
 
 fn prompt_body() -> Result<Option<String>> {
-    let help_message = format!("{}, {}", "Use '\\n' for newlines", get_skip_hint());
+    let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
 
     match Text::new("Provide a longer description of the change:")
         .with_render_config(get_render_config())
@@ -359,7 +359,7 @@ fn prompt_body() -> Result<Option<String>> {
         .map_err(|e| PromptError::from_inquire(e, "Body input"))?
     {
         Some(summary) if summary.is_empty() => Ok(None),
-        Some(summary) => Ok(Some(summary.replace("\\n", "\n"))),
+        Some(summary) => Ok(Some(summary)),
         None => Ok(None),
     }
 }
@@ -375,7 +375,7 @@ fn prompt_breaking() -> Result<bool> {
 }
 
 fn prompt_breaking_text() -> Result<Option<String>> {
-    let help_message = format!("{}, {}", "Use '\\n' for newlines", get_skip_hint());
+    let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
 
     match Text::new("Describe the breaking changes in detail:")
         .with_render_config(get_render_config())
@@ -384,7 +384,7 @@ fn prompt_breaking_text() -> Result<Option<String>> {
         .map_err(|e| PromptError::from_inquire(e, "Breaking changes description"))?
     {
         Some(text) if text.is_empty() => Ok(None),
-        Some(text) => Ok(Some(text.replace("\\n", "\n"))),
+        Some(text) => Ok(Some(text)),
         None => Ok(None),
     }
 }
