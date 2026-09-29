@@ -10,6 +10,7 @@ use inquire::{Confirm, CustomUserError, Select, Text};
 use thiserror::Error;
 
 use crate::config::{CommitType, Config};
+use crate::multiline::MultilineText;
 use crate::scope::ScopeMatches;
 
 #[derive(Debug, Error)]
@@ -383,11 +384,12 @@ fn prompt_body() -> Result<Option<String>> {
     let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
     let _keyboard_enhancement = KeyboardEnhancement::enable()?;
 
-    match Text::new("Provide a longer description of the change:")
-        .with_render_config(get_render_config())
-        .with_help_message(help_message.as_str())
-        .prompt_skippable()
-        .map_err(|e| PromptError::from_inquire(e, "Body input"))?
+    match MultilineText::new(
+        "Provide a longer description of the change:",
+        help_message.as_str(),
+    )
+    .prompt_skippable()
+    .map_err(|e| PromptError::from_inquire(e, "Body input"))?
     {
         Some(summary) if summary.is_empty() => Ok(None),
         Some(summary) => Ok(Some(summary)),
@@ -409,11 +411,12 @@ fn prompt_breaking_text() -> Result<Option<String>> {
     let help_message = format!("{}, {}", "Use <alt+enter> for newlines", get_skip_hint());
     let _keyboard_enhancement = KeyboardEnhancement::enable()?;
 
-    match Text::new("Describe the breaking changes in detail:")
-        .with_render_config(get_render_config())
-        .with_help_message(help_message.as_str())
-        .prompt_skippable()
-        .map_err(|e| PromptError::from_inquire(e, "Breaking changes description"))?
+    match MultilineText::new(
+        "Describe the breaking changes in detail:",
+        help_message.as_str(),
+    )
+    .prompt_skippable()
+    .map_err(|e| PromptError::from_inquire(e, "Breaking changes description"))?
     {
         Some(text) if text.is_empty() => Ok(None),
         Some(text) => Ok(Some(text)),

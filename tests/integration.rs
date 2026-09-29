@@ -264,6 +264,85 @@ fn test_literal_backslash_n_is_preserved_in_body() -> Result<(), Box<dyn Error>>
 
 #[test]
 #[cfg(not(target_os = "windows"))]
+fn test_alt_enter_renders_each_new_input_line() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "changed")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=false");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+
+    process.expect_commit_type()?;
+    process.send_line("docs")?;
+    process.flush()?;
+    process.expect_scope()?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_summary()?;
+    process.send_line("document multiline input")?;
+    process.flush()?;
+    process.expect_body()?;
+    process.send("first line")?;
+    process.flush()?;
+    process.exp_string("first line")?;
+    process.exp_string("\x1b[?25h")?;
+
+    process.send("\x1b[13;3u")?;
+    process.flush()?;
+    let first_newline_frame = process.exp_string("\x1b[?25h")?;
+    assert!(
+        first_newline_frame.contains("first line\r\n\x1b7")
+            && first_newline_frame.ends_with("\x1b8"),
+        "cursor did not move to the first new input line: {first_newline_frame:?}"
+    );
+
+    process.send("\x1b[13;3u")?;
+    process.flush()?;
+    let second_newline_frame = process.exp_string("\x1b[?25h")?;
+    assert!(
+        second_newline_frame.contains("first line\r\n\r\n\x1b7"),
+        "second new input line was not rendered: {second_newline_frame:?}"
+    );
+    assert!(
+        second_newline_frame.ends_with("\x1b8"),
+        "cursor did not move to the second new input line: {second_newline_frame:?}"
+    );
+
+    process.send_line("third line")?;
+    process.flush()?;
+    process.expect_breaking()?;
+    process.send_line("N")?;
+    process.flush()?;
+    process.expect_issues()?;
+    process.send_line("N")?;
+    process.flush()?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.body(), Ok(Some("first line\n\nthird line")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
 fn test_hook_correct() -> Result<(), Box<dyn Error>> {
     let (bin_path, temp_dir, repo) = setup_test_dir()?;
     let config_temp_dir = setup_config_home()?;

@@ -44,10 +44,12 @@ dirs = "7"
 emojis = "0.9"
 gix = "0.88"
 indexmap = "2"
-inquire = { version = "0.9", features = ["experimental-multiline-input"] }
+inquire = "0.9"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
+unicode-segmentation = "1"
+unicode-width = "0.2"
 xdg = "3"
 
 [dev-dependencies]
