@@ -6,10 +6,10 @@ use clap::{CommandFactory, Parser, Subcommand};
 use cocogitto::command::commit::CommitOptions;
 use conventional_commit_parser::parse;
 use cucco::answers::{ExtractedAnswers, get_extracted_answers};
-use cucco::commit::{commit, generate_commit_msg, write_commit_msg};
+use cucco::commit::{commit, generate_commit_msg, stage_changes, write_commit_msg};
 use cucco::config::{Config, ConfigArgs};
 use cucco::questions::{create_prompt, prompt_confirm};
-use cucco::scope::{detect_scope_matches, stage_tracked_changes};
+use cucco::scope::detect_scope_matches;
 use cucco::status::{StagingStatus, check_staging, has_tracked_changes};
 
 #[derive(Parser, Debug)]
@@ -226,10 +226,10 @@ fn main() -> Result<()> {
         ..Default::default()
     }))?;
 
-    // When --all or --add-all is set, stage tracked changes before anything else, so scope detection
-    // sees the ENTIRE diff. Afterwards, the commit step will re-stage idempotently.
-    if (all || add_all) && repo.index_path().exists() {
-        stage_tracked_changes(&repo).context("failed to pre-stage tracked files")?;
+    // When --all or --add-all is set, stage the changes before anything else, so scope detection
+    // sees the entire diff. Afterwards, the commit step will re-stage idempotently.
+    if all || add_all {
+        stage_changes(&repo, add_all).context("failed to pre-stage changes")?;
     }
 
     let scope_matches = detect_scope_matches(&repo, &config)?;
@@ -248,10 +248,10 @@ fn main() -> Result<()> {
 
     // Generate the commit message
     let message = generate_commit_msg(
-        commit_type.clone(),
-        scope.clone(),
-        summary.clone(),
-        body.clone(),
+        &commit_type,
+        scope.as_deref(),
+        &summary,
+        body.as_deref(),
         is_breaking_change,
     )?;
 
@@ -275,7 +275,14 @@ fn main() -> Result<()> {
 
     // Do the thing!
     if hook {
-        write_commit_msg(&repo, commit_type, scope, summary, body, is_breaking_change)?;
+        write_commit_msg(
+            &repo,
+            &commit_type,
+            scope.as_deref(),
+            &summary,
+            body.as_deref(),
+            is_breaking_change,
+        )?;
     } else {
         let options = CommitOptions {
             commit_type: commit_type.as_str(),

@@ -195,16 +195,18 @@ impl Config {
         let config: ConfigTOML = settings.build()?.try_deserialize()?;
 
         // Gather up commit types
-        let mut commit_types = IndexMap::new();
-        for commit_type in config.commit_types.iter() {
-            commit_types.insert(commit_type.name.clone(), commit_type.to_owned());
-        }
+        let commit_types = config
+            .commit_types
+            .into_iter()
+            .map(|commit_type| (commit_type.name.clone(), commit_type))
+            .collect();
 
         // Gather up commit scopes (patterns and ast_grep are inline on each scope)
-        let mut commit_scopes = IndexMap::new();
-        for commit_scope in config.commit_scopes.iter() {
-            commit_scopes.insert(commit_scope.name.clone(), commit_scope.to_owned());
-        }
+        let commit_scopes = config
+            .commit_scopes
+            .into_iter()
+            .map(|commit_scope| (commit_scope.name.clone(), commit_scope))
+            .collect();
 
         let config = Config {
             autocomplete: autocomplete.unwrap_or(config.autocomplete),

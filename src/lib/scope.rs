@@ -124,58 +124,6 @@ impl Config {
     }
 }
 
-/// Stages all tracked modified and deleted files so that scope detection sees
-/// the full diff when `--all` or `--add-all` is passed.
-///
-/// # Errors
-///
-/// Returns an error if the index cannot be read or written, or a changed file
-/// cannot be read.
-pub fn stage_tracked_changes(repo: &Repository) -> Result<()> {
-    let workdir = repo
-        .workdir()
-        .context("repository has no working directory")?;
-
-    let mut index = repo.open_index().context("could not open index")?;
-
-    let (entries, backing) = index.entries_mut_and_pathbacking();
-    for entry in entries.iter_mut() {
-        let path = entry.path_in(backing);
-        let full_path = workdir.join(gix::path::from_bstr(path));
-
-        match gix::index::fs::Metadata::from_path_no_follow(&full_path) {
-            Err(_) => {
-                // The file left the worktree, so mark it for removal.
-                entry.flags.insert(gix::index::entry::Flags::REMOVE);
-            }
-            Ok(meta) => {
-                let new_stat =
-                    gix::index::entry::Stat::from_fs(&meta).context("could not read file stat")?;
-                // Only re-hash if mtime or size changed.
-                if new_stat.mtime.secs != entry.stat.mtime.secs || new_stat.size != entry.stat.size
-                {
-                    let content = std::fs::read(&full_path)
-                        .with_context(|| format!("could not read `{}`", full_path.display()))?;
-                    let oid = repo
-                        .write_blob(&content)
-                        .context("could not write blob")?
-                        .detach();
-                    entry.id = oid;
-                    entry.stat = new_stat;
-                }
-            }
-        }
-    }
-
-    index.remove_entries(|_, _, e| e.flags.contains(gix::index::entry::Flags::REMOVE));
-    index
-        .write(gix::index::write::Options::default())
-        .map_err(|error| anyhow::Error::from(error.into_error()))
-        .context("could not write index")?;
-
-    Ok(())
-}
-
 /// Detects the scopes matched by the staged changes.
 ///
 /// Path patterns are checked first, then ast-grep rules against the staged
@@ -192,25 +140,25 @@ pub fn detect_scope_matches(repo: &Repository, config: &Config) -> Result<ScopeM
     }
 
     let compiled_patterns = config.compile_scope_patterns()?;
-    let mut matched_scopes = IndexSet::new();
-
-    for change in &changed {
-        let normalized_path = normalize_relative_path(&change.path);
-
-        for (scope_name, regexes) in &compiled_patterns {
-            if regexes.iter().any(|re| re.is_match(&normalized_path)) {
-                matched_scopes.insert(scope_name.to_string());
-            }
-        }
-    }
+    let pattern_scopes = changed
+        .iter()
+        .map(|change| normalize_relative_path(&change.path))
+        .flat_map(|path| {
+            compiled_patterns
+                .iter()
+                .filter(move |(_, regexes)| regexes.iter().any(|re| re.is_match(&path)))
+                .map(|(scope_name, _)| scope_name.to_string())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
 
     #[cfg(feature = "ast-grep")]
-    {
-        let ast_scopes = detect_ast_grep_scopes(repo, config, &changed)?;
-        for scope in ast_scopes {
-            matched_scopes.insert(scope);
-        }
-    }
+    let ast_grep_scopes = detect_ast_grep_scopes(repo, config, &changed)?;
+    #[cfg(not(feature = "ast-grep"))]
+    let ast_grep_scopes = Vec::new();
+
+    let matched_scopes: IndexSet<String> =
+        pattern_scopes.into_iter().chain(ast_grep_scopes).collect();
 
     Ok(ScopeMatches {
         matches: matched_scopes.into_iter().collect(),
@@ -284,30 +232,33 @@ fn detect_ast_grep_scopes(
 
     let compiled_rules = config.compile_ast_grep_rules()?;
 
-    let mut matched_scopes = IndexSet::new();
-
-    for change in changed {
-        let applicable_rules = compiled_rules.rules.for_path(&change.path);
-        if applicable_rules.is_empty() {
-            continue;
-        }
-
-        let Ok(blob) = repo.find_blob(change.id) else {
-            continue;
-        };
-        let Ok(source) = std::str::from_utf8(&blob.data) else {
-            continue;
-        };
-
-        for rule in applicable_rules {
-            let root = rule.language.ast_grep(source);
-            if root.root().find(&rule.matcher).is_some()
-                && let Some(scope) = compiled_rules.ids_to_scope.get(&rule.id)
-            {
-                matched_scopes.insert(scope.clone());
+    let matched_scopes: IndexSet<String> = changed
+        .iter()
+        .flat_map(|change| {
+            let applicable_rules = compiled_rules.rules.for_path(&change.path);
+            if applicable_rules.is_empty() {
+                return Vec::new();
             }
-        }
-    }
+            let Ok(blob) = repo.find_blob(change.id) else {
+                return Vec::new();
+            };
+            let Ok(source) = std::str::from_utf8(&blob.data) else {
+                return Vec::new();
+            };
+
+            applicable_rules
+                .into_iter()
+                .filter(|rule| {
+                    rule.language
+                        .ast_grep(source)
+                        .root()
+                        .find(&rule.matcher)
+                        .is_some()
+                })
+                .filter_map(|rule| compiled_rules.ids_to_scope.get(&rule.id).cloned())
+                .collect()
+        })
+        .collect();
 
     Ok(matched_scopes.into_iter().collect())
 }
