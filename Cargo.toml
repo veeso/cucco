@@ -39,6 +39,7 @@ clap_complete_command = { version = "0.6", features = ["nushell"] }
 cocogitto = { version = "7", default-features = false }
 config = { version = "0.15", features = ["toml"] }
 conventional_commit_parser = "0.9"
+crossterm = "0.29"
 dirs = "7"
 emojis = "0.9"
 gix = "0.88"
@@ -47,6 +48,8 @@ inquire = "0.9"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
+unicode-segmentation = "1"
+unicode-width = "0.2"
 xdg = "3"
 
 [dev-dependencies]

@@ -71,6 +71,7 @@ trait ExpectPromps {
     fn expect_body(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_breaking(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_breaking_details(&mut self) -> Result<String, rexpect::error::Error>;
+    fn expect_multiline_end(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_issues(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_issues_details(&mut self) -> Result<String, rexpect::error::Error>;
     fn expect_confirm(&mut self) -> Result<String, rexpect::error::Error>;
@@ -91,15 +92,22 @@ impl ExpectPromps for PtySession {
     }
 
     fn expect_body(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[>1u")?;
         self.exp_string("longer description of the change")
     }
 
     fn expect_breaking(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[<1u")?;
         self.exp_string("breaking changes?")
     }
 
     fn expect_breaking_details(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[>1u")?;
         self.exp_string("in detail:")
+    }
+
+    fn expect_multiline_end(&mut self) -> Result<String, rexpect::error::Error> {
+        self.exp_string("\x1b[<1u")
     }
 
     fn expect_issues(&mut self) -> Result<String, rexpect::error::Error> {
@@ -126,7 +134,6 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     do_initial_commit(&repo, "docs(readme): initial draft")?;
 
     fs::write(temp_dir.path().join("config.json"), "bar")?;
-    // TODO properly test "-a"
     git_add(&repo, ".")?;
 
     let mut cmd = Command::new(bin_path);
@@ -149,15 +156,19 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     process.send_line("refactor config pairs")?;
     process.flush()?;
     process.expect_body()?;
-    process
-        .send_line("Removed and added a config pair each\\nNecessary for future compatibility.")?;
+    process.send("Removed and added a config pair each")?;
+    process.send("\x1b[13;3u")?;
+    process.send_line("Necessary for future compatibility.")?;
     process.flush()?;
     process.expect_breaking()?;
     process.send_line("Y")?;
     process.flush()?;
     process.expect_breaking_details()?;
-    process.send_line("Something can't be configured anymore")?;
+    process.send("Something can't be configured anymore")?;
+    process.send("\x1b\r")?;
+    process.send_line("The old configuration is no longer supported.")?;
     process.flush()?;
+    process.expect_multiline_end()?;
     process.expect_issues()?;
     process.send_line("Y")?;
     process.flush()?;
@@ -181,9 +192,149 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
     assert_eq!(
         commit.body(),
         Ok(Some(
-            "Removed and added a config pair each\nNecessary for future compatibility.\n\ncloses #1\nBREAKING CHANGE: Something can't be configured anymore"
+            "Removed and added a config pair each\n\
+Necessary for future compatibility.\n\n\
+closes #1\n\
+BREAKING CHANGE: Something can't be configured anymore\n\
+The old configuration is no longer supported."
         ))
     );
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_literal_backslash_n_is_preserved_in_body() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "changed")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=false");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+
+    process.expect_commit_type()?;
+    process.send_line("docs")?;
+    process.flush()?;
+    process.expect_scope()?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_summary()?;
+    process.send_line("document an escape sequence")?;
+    process.flush()?;
+    process.expect_body()?;
+    process.send_line(r"Keep \n as literal text.")?;
+    process.flush()?;
+    process.expect_breaking()?;
+    process.send_line("N")?;
+    process.flush()?;
+    process.expect_issues()?;
+    process.send_line("N")?;
+    process.flush()?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(
+        commit.summary(),
+        Ok(Some("docs: document an escape sequence"))
+    );
+    assert_eq!(commit.body(), Ok(Some(r"Keep \n as literal text.")));
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_alt_enter_renders_each_new_input_line() -> Result<(), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("README.md"), "changed")?;
+    git_add(&repo, ".")?;
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("-y")
+        .arg("--autocomplete=false");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+
+    process.expect_commit_type()?;
+    process.send_line("docs")?;
+    process.flush()?;
+    process.expect_scope()?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_summary()?;
+    process.send_line("document multiline input")?;
+    process.flush()?;
+    process.expect_body()?;
+    process.send("first line")?;
+    process.flush()?;
+    process.exp_string("first line")?;
+    process.exp_string("\x1b[?25h")?;
+
+    process.send("\x1b[13;3u")?;
+    process.flush()?;
+    let first_newline_frame = process.exp_string("\x1b[?25h")?;
+    assert!(
+        first_newline_frame.contains("first line\r\n\x1b7")
+            && first_newline_frame.ends_with("\x1b8"),
+        "cursor did not move to the first new input line: {first_newline_frame:?}"
+    );
+
+    process.send("\x1b[13;3u")?;
+    process.flush()?;
+    let second_newline_frame = process.exp_string("\x1b[?25h")?;
+    assert!(
+        second_newline_frame.contains("first line\r\n\r\n\x1b7"),
+        "second new input line was not rendered: {second_newline_frame:?}"
+    );
+    assert!(
+        second_newline_frame.ends_with("\x1b8"),
+        "cursor did not move to the second new input line: {second_newline_frame:?}"
+    );
+
+    process.send_line("third line")?;
+    process.flush()?;
+    process.expect_breaking()?;
+    process.send_line("N")?;
+    process.flush()?;
+    process.expect_issues()?;
+    process.send_line("N")?;
+    process.flush()?;
+    let eof_output = process.exp_eof();
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+
+    if !success {
+        panic!("Command exited non-zero, end of output: {eof_output:#?}");
+    }
+
+    let commit = get_last_commit(&repo)?;
+    assert_eq!(commit.body(), Ok(Some("first line\n\nthird line")));
 
     temp_dir.close()?;
     config_temp_dir.close()?;
@@ -348,6 +499,7 @@ fn test_empty_breaking_text_correct() -> Result<(), Box<dyn Error>> {
     // `^[` is the same as <esc>
     process.send_control('[')?;
     process.flush()?;
+    process.expect_multiline_end()?;
     process.expect_issues()?;
     process.send_line("N")?;
     process.flush()?;

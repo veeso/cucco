@@ -716,6 +716,7 @@ dependencies = [
  "cocogitto",
  "config 0.15.26",
  "conventional_commit_parser",
+ "crossterm",
  "dirs",
  "emojis",
  "git2 0.21.0",
@@ -728,6 +729,8 @@ dependencies = [
  "serde",
  "tempfile",
  "thiserror 2.0.21",
+ "unicode-segmentation",
+ "unicode-width",
  "xdg",
 ]
 
