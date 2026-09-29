@@ -8,7 +8,7 @@ authors = [
 ]
 categories = ["command-line-utilities", "development-tools"]
 documentation = "https://docs.rs/cucco"
-edition = "2021"
+edition = "2024"
 homepage = "https://github.com/veeso/cucco"
 include = [
   "/CHANGELOG.md",
