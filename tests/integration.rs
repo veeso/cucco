@@ -18,10 +18,7 @@ use tempfile::TempDir;
 
 #[cfg(not(target_os = "windows"))]
 fn setup_config_home() -> Result<TempDir, Box<dyn Error>> {
-    let temp_dir = tempfile::tempdir()?;
-    std::env::set_var("XDG_CONFIG_HOME", temp_dir.path());
-
-    Ok(temp_dir)
+    Ok(tempfile::tempdir()?)
 }
 
 fn setup_test_dir() -> Result<(PathBuf, TempDir, Repository), Box<dyn std::error::Error>> {
@@ -138,6 +135,7 @@ fn test_everything_correct() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-a")
@@ -216,6 +214,7 @@ fn test_literal_backslash_n_is_preserved_in_body() -> Result<(), Box<dyn Error>>
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-y")
@@ -273,6 +272,7 @@ fn test_alt_enter_renders_each_new_input_line() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-y")
@@ -353,6 +353,7 @@ fn test_hook_correct() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--hook")
@@ -412,6 +413,7 @@ fn test_stdout_correct() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--stdout")
@@ -472,6 +474,7 @@ fn test_empty_breaking_text_correct() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-a")
@@ -801,6 +804,7 @@ fn test_confirmation_accept() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-a");
@@ -927,6 +931,7 @@ fn test_confirmation_decline() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-a");
@@ -1077,6 +1082,7 @@ fn test_force_config_scopes_integration() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--stdout");
@@ -1128,6 +1134,7 @@ fn test_require_scope_integration() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--stdout");
@@ -1186,6 +1193,7 @@ fn test_scope_pattern_auto_assigns_scope() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--stdout");
@@ -1240,6 +1248,7 @@ fn test_force_config_scopes_prints_pre_assigned_scope() -> Result<(), Box<dyn Er
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--stdout");
@@ -1362,6 +1371,7 @@ fn test_pre_commit_hook_runs() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-y")
@@ -1403,6 +1413,7 @@ fn test_pre_commit_hook_failure_aborts() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-y")
@@ -1444,6 +1455,7 @@ fn test_no_verify_skips_pre_commit_hook() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--no-verify")
@@ -1487,6 +1499,7 @@ fn test_post_commit_hook_runs() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-y")
@@ -1528,6 +1541,7 @@ fn test_post_commit_hook_failure_does_not_abort() -> Result<(), Box<dyn Error>> 
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-y")
@@ -1568,6 +1582,7 @@ fn test_add_all_stages_modified_deleted_and_untracked() -> Result<(), Box<dyn Er
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--add-all")
@@ -1615,6 +1630,7 @@ fn test_add_all_stages_in_fresh_repo_without_initial_commit() -> Result<(), Box<
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-A")
@@ -1666,6 +1682,7 @@ fn test_all_stages_tracked_but_not_untracked() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("-a")
@@ -1783,6 +1800,7 @@ fn test_no_verify_skips_post_commit_hook() -> Result<(), Box<dyn Error>> {
 
     let mut cmd = Command::new(bin_path);
     cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
         .arg("-C")
         .arg(temp_dir.path())
         .arg("--no-verify")

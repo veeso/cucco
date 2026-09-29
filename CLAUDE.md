@@ -65,7 +65,7 @@ Never request build or test parallelism above eight from the CLI.
 
 ## Conventions
 
-- Toolchain pinned to Rust 1.98.1, edition 2021. Keep `rust-toolchain.toml`
+- Toolchain pinned to Rust 1.98.1, edition 2024. Keep `rust-toolchain.toml`
   and `package.rust-version` in sync.
 - Format with `just fmt` only (dprint delegates `.rs` files to nightly rustfmt
   with `group_imports` and `imports_granularity` from `rustfmt.toml`).
