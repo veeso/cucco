@@ -23,6 +23,7 @@
     ".claude/plans",
     ".superpowers",
     "docs/superpowers",
+    "CHANGELOG.md",
     "Cargo.lock",
     "coverage",
     "lcov.info"
