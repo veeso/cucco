@@ -83,6 +83,12 @@ git add README.md
 cucco
 ```
 
+When the short description prompt shows a greyed-out suggestion, press Tab or
+the Right arrow to fill it in. You can then edit the text or press Enter to
+submit it. Once you have typed something, Tab does nothing and the Right arrow
+only moves the cursor. The suggestion is the summary of the last message stored in
+`.git/COMMIT_EDITMSG`, when that message is a conventional commit.
+
 While entering the longer description or breaking-change details, press
 Alt+Enter to insert a newline. Press Enter without Alt to submit the prompt.
 The characters `\n` are treated as literal text.

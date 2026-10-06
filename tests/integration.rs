@@ -1828,3 +1828,172 @@ fn test_no_verify_skips_post_commit_hook() -> Result<(), Box<dyn Error>> {
     config_temp_dir.close()?;
     Ok(())
 }
+
+#[cfg(not(target_os = "windows"))]
+const SUMMARY_SUGGESTION_HINT: &str = "<tab> or <right> to use the suggestion";
+
+/// Spawns `cucco --stdout` and answers the prompts up to the summary one.
+///
+/// `previous_message` becomes the content of `.git/COMMIT_EDITMSG`, which is
+/// where the summary suggestion comes from. `None` removes the file.
+#[cfg(not(target_os = "windows"))]
+fn spawn_at_summary_prompt(
+    previous_message: Option<&str>,
+) -> Result<(PtySession, TempDir, TempDir), Box<dyn Error>> {
+    let (bin_path, temp_dir, repo) = setup_test_dir()?;
+    let config_temp_dir = setup_config_home()?;
+
+    fs::write(temp_dir.path().join("config.json"), "abc")?;
+    git_add(&repo, "*")?;
+
+    let editmsg = temp_dir.path().join(".git").join("COMMIT_EDITMSG");
+    match previous_message {
+        Some(message) => fs::write(&editmsg, message)?,
+        None => match fs::remove_file(&editmsg) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error.into()),
+            _ => {}
+        },
+    }
+
+    let mut cmd = Command::new(bin_path);
+    cmd.env("NO_COLOR", "1")
+        .env("XDG_CONFIG_HOME", config_temp_dir.path())
+        .arg("-C")
+        .arg(temp_dir.path())
+        .arg("--stdout")
+        .arg("--autocomplete=false");
+
+    let mut process = spawn_command(cmd, Some(5000))?;
+
+    process.expect_commit_type()?;
+    process.send_line("fix")?;
+    process.flush()?;
+    process.expect_scope()?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_summary()?;
+
+    Ok((process, temp_dir, config_temp_dir))
+}
+
+/// Skips the body, breaking-change and issue prompts.
+///
+/// Returns the output read between the summary prompt and the body prompt.
+#[cfg(not(target_os = "windows"))]
+fn skip_prompts_after_summary(process: &mut PtySession) -> Result<String, Box<dyn Error>> {
+    let summary_frames = process.exp_string("\x1b[>1u")?;
+    process.exp_string("longer description of the change")?;
+    process.send_line("")?;
+    process.flush()?;
+    process.expect_breaking()?;
+    process.send_line("N")?;
+    process.flush()?;
+    process.expect_issues()?;
+    process.send_line("N")?;
+    process.flush()?;
+    Ok(summary_frames)
+}
+
+/// Fills the summary suggestion with `key`, appends `suffix` and checks the
+/// resulting message.
+#[cfg(not(target_os = "windows"))]
+fn assert_summary_suggestion_filled_by(
+    key: &str,
+    suffix: &str,
+    expected: &str,
+) -> Result<(), Box<dyn Error>> {
+    let (mut process, temp_dir, config_temp_dir) =
+        spawn_at_summary_prompt(Some("feat(space): delete some stars\n"))?;
+
+    process.exp_string("delete some stars")?;
+    process.exp_string(SUMMARY_SUGGESTION_HINT)?;
+    process.send(key)?;
+    process.send_line(suffix)?;
+    process.flush()?;
+    skip_prompts_after_summary(&mut process)?;
+    process.exp_string(expected)?;
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_summary_suggestion_is_filled_with_tab() -> Result<(), Box<dyn Error>> {
+    assert_summary_suggestion_filled_by("\t", " now", "fix: delete some stars now")
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_summary_suggestion_is_filled_with_right_arrow() -> Result<(), Box<dyn Error>> {
+    // `^[[C` is the right arrow
+    assert_summary_suggestion_filled_by("\x1b[C", " now", "fix: delete some stars now")
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_summary_suggestion_is_not_submitted_by_enter() -> Result<(), Box<dyn Error>> {
+    let (mut process, temp_dir, config_temp_dir) =
+        spawn_at_summary_prompt(Some("feat(space): delete some stars\n"))?;
+
+    process.exp_string("delete some stars")?;
+    process.send_line("")?;
+    process.flush()?;
+    process.exp_string("A summary is required")?;
+    process.send_line("patch a bug")?;
+    process.flush()?;
+    skip_prompts_after_summary(&mut process)?;
+    process.exp_string("fix: patch a bug")?;
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_summary_without_suggestion_ignores_tab_and_right_arrow() -> Result<(), Box<dyn Error>> {
+    let (mut process, temp_dir, config_temp_dir) = spawn_at_summary_prompt(None)?;
+
+    process.send("\t")?;
+    // `^[[C` is the right arrow
+    process.send("\x1b[C")?;
+    process.send_line("patch a bug")?;
+    process.flush()?;
+    let summary_frames = skip_prompts_after_summary(&mut process)?;
+    assert!(
+        !summary_frames.contains(SUMMARY_SUGGESTION_HINT),
+        "the hint was shown without a suggestion: {summary_frames:?}"
+    );
+    process.exp_string("fix: patch a bug")?;
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_summary_prompt_is_cancelled_by_escape() -> Result<(), Box<dyn Error>> {
+    let (mut process, temp_dir, config_temp_dir) =
+        spawn_at_summary_prompt(Some("feat(space): delete some stars\n"))?;
+
+    process.exp_string("delete some stars")?;
+    // `^[` is the same as <esc>
+    process.send_control('[')?;
+    process.flush()?;
+    process.exp_string("Commit summary input cancelled")?;
+    process.exp_eof()?;
+
+    let exitcode = process.process().wait()?;
+    let success = matches!(exitcode, WaitStatus::Exited(_, 0));
+    assert!(
+        !success,
+        "expected non-zero exit when the summary prompt is cancelled"
+    );
+
+    temp_dir.close()?;
+    config_temp_dir.close()?;
+    Ok(())
+}

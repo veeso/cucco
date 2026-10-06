@@ -12,7 +12,7 @@ use inquire::{Confirm, CustomUserError, Select, Text};
 use thiserror::Error;
 
 use crate::config::{CommitType, Config};
-use crate::multiline::MultilineText;
+use crate::multiline::{MultilineText, SuggestedText};
 use crate::scope::ScopeMatches;
 
 #[derive(Debug, Error)]
@@ -381,12 +381,13 @@ fn prompt_summary(msg: String) -> Result<String> {
         Err(_) => "".into(),
     };
 
-    let summary = Text::new("Write a short, imperative tense description of the change:")
-        .with_render_config(get_render_config())
-        .with_placeholder(&previous_summary)
-        .with_validator(validate_summary)
-        .prompt()
-        .map_err(|e| PromptError::from_inquire(e, "Commit summary input"))?;
+    let summary = SuggestedText::new(
+        "Write a short, imperative tense description of the change:",
+        &previous_summary,
+        validate_summary,
+    )
+    .prompt()
+    .map_err(|e| PromptError::from_inquire(e, "Commit summary input"))?;
 
     Ok(summary)
 }

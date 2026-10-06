@@ -37,8 +37,9 @@ The toolchain is pinned to Rust 1.98.1 with edition 2024. Keep
 - `src/lib/config.rs`: layered configuration (`.cucco.toml`,
   `cucco/config.toml`, defaults embedded from `meta/config/default.toml`).
 - `src/lib/emoji.rs`: emoji and shortcode handling.
-- `src/lib/multiline.rs`: crate-private multi-line text prompt used for the
-  body and breaking change prompts.
+- `src/lib/multiline.rs`: crate-private text prompts: the multi-line one used
+  for the body and breaking change prompts, and the single-line one with a
+  tab/right suggestion used for the summary prompt.
 - `src/lib/questions.rs`: inquire prompts and scope autocompletion.
 - `src/lib/scope.rs`: scope detection from staged paths and ast-grep rules.
 - `src/lib/status.rs`: staging area inspection.
@@ -150,3 +151,5 @@ passed or silently replace the repository command with a weaker check.
   publishing, and updates the Homebrew formula in `veeso/homebrew-cucco`.
   Always run it with `dry_run = true` first.
 - Preview release notes locally with `just changelog_preview <version>`.
+- Never edit `CHANGELOG.md` by hand. The release workflow regenerates it from
+  the commit history, so write clear Conventional Commit messages instead.
