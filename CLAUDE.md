@@ -73,6 +73,8 @@ Never request build or test parallelism above eight from the CLI.
   and `package.rust-version` in sync.
 - Format with `just fmt` only (dprint delegates `.rs` files to nightly rustfmt
   with `group_imports` and `imports_granularity` from `rustfmt.toml`).
+- Never edit `CHANGELOG.md` by hand. The release workflow regenerates it from
+  the commit history.
 - Conventional Commits, imperative and lower-case. No agent attribution,
   session links, or agent `Co-Authored-By` lines.
 - Keep `Cargo.toml` dependency and feature entries alphabetically sorted, with
