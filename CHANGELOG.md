@@ -3,6 +3,15 @@
 All notable changes to this project are documented in this file.
 
 
+## 4.1.0
+
+Released on 2026-10-06
+
+### Added
+
+
+- fill the summary suggestion with tab or right arrow (#6)
+> The summary prompt showed the previous commit summary as a greyed-out placeholder that could not be accepted. The prompt now runs on the crate's own crossterm text prompt in single-line mode: while the input is empty, tab or the right arrow copy the suggestion into it, and a help line advertises both keys.
 ## 4.0.0
 
 Released on 2026-09-29
